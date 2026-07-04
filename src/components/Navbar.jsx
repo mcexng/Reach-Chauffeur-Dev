@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-export default function Navbar({ currentPage, setCurrentPage, onOpenBooking }) {
+export default function Navbar({ onOpenBooking }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const location = useLocation();
+
   const navItems = [
-    { id: 'home', label: 'Home' },
-    { id: 'fleet', label: 'Our Fleet' },
-    { id: 'tracking', label: 'Live Tracking' },
-    { id: 'corporate', label: 'Corporate Portal' },
-    { id: 'news', label: 'News Hub' }
+    { id: 'home', label: 'Services', path: '/' },
+    { id: 'fleet', label: 'Fleet', path: '/fleets' },
+    { id: 'tracking', label: 'Live Tracking', path: '/tracking' },
+    { id: 'corporate', label: 'Corporate Portal', path: '/corporate' },
+    { id: 'news', label: 'News Hub', path: '/news' }
   ];
 
-  const handleNavClick = (id) => {
-    setCurrentPage(id);
+  const handleNavClick = () => {
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -20,65 +22,36 @@ export default function Navbar({ currentPage, setCurrentPage, onOpenBooking }) {
   return (
     <header className="navbar-header">
       <div className="navbar-container glass-panel">
-        <div className="logo" onClick={() => handleNavClick('home')}>
-          <span className="logo-reach">REACH</span>
-          <span className="logo-chauffeur gradient-text-gold">CHAUFFEUR</span>
-        </div>
+        <Link to="/" className="logo" onClick={handleNavClick}>
+          <img src="/reach-logo.png" alt="Reach Chauffeur Logo" className="brand-logo-img" />
+          <div className="logo-text">
+            <span className="logo-reach">REACH</span>
+            <span className="logo-chauffeur gradient-text-gold">CHAUFFEUR</span>
+          </div>
+        </Link>
 
-        {/* Desktop Nav */}
+        {/* Universal Nav */}
         <nav className="desktop-nav">
           {navItems.map((item) => (
-            <button
+            <Link
               key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`nav-link ${currentPage === item.id ? 'active' : ''}`}
+              to={item.path}
+              onClick={handleNavClick}
+              className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
             >
               {item.label}
-            </button>
+            </Link>
           ))}
         </nav>
 
         <div className="nav-actions">
-          <button className="btn-champagne nav-cta" onClick={onOpenBooking}>
-            Book Ride
-          </button>
-
-          {/* Hamburger Menu Icon */}
-          <button 
-            className={`hamburger-btn ${mobileMenuOpen ? 'open' : ''}`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle Navigation"
-          >
-            <span></span>
-            <span></span>
-            <span></span>
+          <button className="btn-gold nav-cta" onClick={onOpenBooking}>
+            BOOK NOW
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
-      <div className={`mobile-nav-drawer glass-panel ${mobileMenuOpen ? 'active' : ''}`}>
-        <nav className="mobile-nav-links">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`mobile-nav-link ${currentPage === item.id ? 'active' : ''}`}
-            >
-              {item.label}
-            </button>
-          ))}
-          <button 
-            className="btn-champagne mobile-nav-cta" 
-            onClick={() => {
-              setMobileMenuOpen(false);
-              onOpenBooking();
-            }}
-          >
-            Book Ride
-          </button>
-        </nav>
-      </div>
+
 
       <style>{`
         .navbar-header {
@@ -93,36 +66,77 @@ export default function Navbar({ currentPage, setCurrentPage, onOpenBooking }) {
         }
 
         .navbar-container {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px 32px;
-          border-radius: 50px;
-          height: 70px;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 12px;
+          height: auto;
+          padding: 16px;
+        }
+
+        @media (max-width: 768px) {
+          .navbar-container {
+            border-radius: 20px;
+          }
         }
 
         .logo {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 12px;
+          text-decoration: none;
           cursor: pointer;
+        }
+        
+        .brand-logo-img {
+          width: 50px;
+          height: 50px;
+          object-fit: contain;
+          border-radius: 8px;
+        }
+
+        .logo-text {
+          display: flex;
+          flex-direction: column;
+          line-height: 1;
           font-family: 'Outfit', sans-serif;
-          font-size: 1.3rem;
-          font-weight: 800;
-          letter-spacing: 0.05em;
         }
 
         .logo-reach {
           color: var(--color-platinum);
+          font-size: 1.25rem;
+          font-weight: 800;
+          letter-spacing: 0.15em;
         }
 
         .logo-chauffeur {
-          font-weight: 500;
+          font-size: 0.65rem;
+          font-weight: 600;
+          letter-spacing: 0.25em;
+          text-transform: uppercase;
+          margin-top: 2px;
         }
 
         .desktop-nav {
           display: flex;
           gap: 28px;
+          align-items: center;
+        }
+
+        @media (max-width: 900px) {
+          .desktop-nav {
+            width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+            justify-content: flex-start;
+            gap: 16px;
+            padding: 4px 0;
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+          }
+          
+          .desktop-nav::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+          }
         }
 
         .nav-link {
@@ -164,111 +178,33 @@ export default function Navbar({ currentPage, setCurrentPage, onOpenBooking }) {
         }
 
         .nav-cta {
-          padding: 10px 22px;
+          background-color: #CBA557;
+          color: #fff;
+          border: none;
+          padding: 10px 24px;
           font-size: 0.85rem;
-          border-radius: 20px;
-        }
-
-        .hamburger-btn {
-          display: none;
-          flex-direction: column;
-          justify-content: space-between;
-          width: 24px;
-          height: 16px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          z-index: 1001;
-        }
-
-        .hamburger-btn span {
-          width: 100%;
-          height: 2px;
-          background-color: var(--color-platinum);
-          transition: var(--transition-smooth);
-        }
-
-        .hamburger-btn.open span:nth-child(1) {
-          transform: translateY(7px) rotate(45deg);
-          background-color: var(--color-champagne);
-        }
-
-        .hamburger-btn.open span:nth-child(2) {
-          opacity: 0;
-        }
-
-        .hamburger-btn.open span:nth-child(3) {
-          transform: translateY(-7px) rotate(-45deg);
-          background-color: var(--color-champagne);
-        }
-
-        .mobile-nav-drawer {
-          position: absolute;
-          top: 85px;
-          left: 24px;
-          right: 24px;
-          padding: 24px;
-          display: none;
-          flex-direction: column;
-          border-radius: 20px;
-          opacity: 0;
-          transform: translateY(-20px);
-          pointer-events: none;
-          transition: var(--transition-smooth);
-        }
-
-        .mobile-nav-drawer.active {
-          opacity: 1;
-          transform: translateY(0);
-          pointer-events: all;
-          display: flex;
-        }
-
-        .mobile-nav-links {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          align-items: center;
-        }
-
-        .mobile-nav-link {
-          background: none;
-          border: none;
-          color: var(--color-silver);
           font-family: 'Outfit', sans-serif;
-          font-size: 1.1rem;
-          font-weight: 500;
+          font-weight: 600;
+          border-radius: 20px;
           cursor: pointer;
-          transition: var(--transition-smooth);
-          width: 100%;
-          text-align: center;
-          padding: 8px 0;
+          transition: all 0.3s ease;
         }
 
-        .mobile-nav-link:hover, .mobile-nav-link.active {
-          color: var(--color-champagne);
-        }
-
-        .mobile-nav-cta {
-          width: 100%;
-          margin-top: 10px;
+        .nav-cta:hover {
+          background-color: #B59045;
+          transform: translateY(-2px);
         }
 
         @media (max-width: 900px) {
-          .desktop-nav {
-            display: none;
+          .nav-actions {
+            position: absolute;
+            top: 24px;
+            right: 16px;
           }
 
           .nav-cta {
-            display: none;
-          }
-
-          .hamburger-btn {
-            display: flex;
-          }
-
-          .mobile-nav-drawer {
-            display: flex;
+            padding: 8px 16px;
+            font-size: 0.75rem;
           }
         }
       `}</style>

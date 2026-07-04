@@ -401,7 +401,7 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
                         <label>Preferred Vehicle Model</label>
                         <select
                           className="glass-input"
-                          style={{ background: 'var(--color-obsidian-light)', color: '#fff', border: '1px solid var(--glass-border)' }}
+                          style={{ background: 'var(--color-bg-elevated)', color: 'var(--color-text-main)', border: '1px solid var(--glass-border)' }}
                           value={activeVehicle?.id || ''}
                           onChange={(e) => {
                             const found = vehicles.find(v => v.id === e.target.value);
@@ -620,7 +620,7 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(8, 8, 10, 0.85);
+          background: rgba(255, 255, 255, 0.85);
           backdrop-filter: blur(12px);
           display: flex;
           align-items: center;
@@ -635,7 +635,7 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
           max-height: 90vh;
           overflow-y: auto;
           border-radius: 24px;
-          border-color: rgba(255, 255, 255, 0.12);
+          border-color: rgba(0, 0, 0, 0.12);
           display: flex;
           flex-direction: column;
         }
@@ -679,7 +679,7 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
           justify-content: space-between;
           padding: 20px 40px;
           border-bottom: 1px solid var(--glass-border);
-          background: rgba(0, 0, 0, 0.15);
+          background: rgba(255, 255, 255, 0.15);
         }
 
         .step-dot-wrapper {
@@ -713,7 +713,7 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
         .step-dot-wrapper.active .step-dot {
           border-color: var(--color-champagne);
           background: var(--color-champagne);
-          color: #08080A;
+          color: #fff;
           box-shadow: 0 0 10px var(--color-gold-glow);
         }
 
@@ -775,7 +775,7 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
         .stop-number-badge {
           font-size: 0.75rem;
           font-weight: 600;
-          background: rgba(255, 255, 255, 0.05);
+          background: rgba(0, 0, 0, 0.05);
           padding: 6px 10px;
           border-radius: 6px;
           color: var(--color-silver);
@@ -820,7 +820,7 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
         }
 
         .dropdown-select option {
-          background: var(--color-obsidian-light);
+          background: var(--color-bg-card);
           color: var(--color-platinum);
         }
 

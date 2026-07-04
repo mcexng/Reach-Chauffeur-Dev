@@ -222,6 +222,8 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           grid-template-columns: 3fr 1fr;
           gap: 40px;
           margin-top: 40px;
+          width: 100%;
+          max-width: 100%;
         }
 
         @media (max-width: 1100px) {
@@ -234,6 +236,9 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           display: flex;
           flex-direction: column;
           gap: 30px;
+          min-width: 0;
+          width: 100%;
+          max-width: 100%;
         }
 
         .filter-bar {
@@ -243,6 +248,12 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           border-radius: 50px;
           overflow-x: auto;
           white-space: nowrap;
+          max-width: 100%;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none; /* Hide scrollbar Firefox */
+        }
+        .filter-bar::-webkit-scrollbar {
+          display: none; /* Hide scrollbar Safari/Chrome */
         }
 
         .filter-btn {
@@ -302,6 +313,9 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           display: grid;
           grid-template-columns: repeat(2, 1fr);
           gap: 30px;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
         }
 
         @media (max-width: 768px) {
@@ -316,6 +330,9 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           display: flex;
           flex-direction: column;
           position: relative;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
         }
 
         .card-media-slider {
@@ -463,6 +480,7 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           display: flex;
           align-items: center;
           gap: 10px;
+          flex-wrap: wrap;
         }
 
         .price-standard {
@@ -476,13 +494,25 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           font-weight: 800;
         }
 
+        @media (max-width: 480px) {
+          .card-pricing {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          
+          .card-info {
+            padding: 20px;
+          }
+        }
+
         /* Hover Specs Overlay */
         .card-specs-overlay {
           position: absolute;
           bottom: 76px;
           left: 0;
           right: 0;
-          background: rgba(8, 8, 10, 0.95);
+          background: rgba(255, 255, 255, 0.95);
           backdrop-filter: blur(10px);
           padding: 24px 30px;
           transform: translateY(100%);
@@ -495,13 +525,38 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
         .fleet-card:hover .card-specs-overlay {
           transform: translateY(0);
           opacity: 1;
+          pointer-events: auto;
+        }
+
+        @media (max-width: 768px) {
+          .card-specs-overlay {
+            position: relative;
+            bottom: auto;
+            left: auto;
+            right: auto;
+            transform: none !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            padding: 16px 20px;
+            background: transparent;
+            backdrop-filter: none;
+            border-top: none;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 10px;
+          }
+          .fleet-card {
+            height: auto;
+          }
+          .card-info {
+            padding: 20px;
+          }
         }
 
         .card-specs-overlay h4 {
           font-size: 0.9rem;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: var(--color-champagne);
+          color: #CBA557;
           margin-bottom: 12px;
         }
 
@@ -514,13 +569,13 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
 
         .card-specs-overlay li {
           font-size: 0.85rem;
-          color: var(--color-silver);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+          color: var(--color-text-muted);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
           padding-bottom: 6px;
         }
 
         .card-specs-overlay li strong {
-          color: var(--color-platinum);
+          color: var(--color-text-main);
         }
 
         .card-reserve-btn {

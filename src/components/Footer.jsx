@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-export default function Footer({ setCurrentPage, onOpenLegal }) {
+export default function Footer({ onOpenLegal }) {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -15,8 +16,7 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
     }
   };
 
-  const handleLinkClick = (page) => {
-    setCurrentPage(page);
+  const handleLinkClick = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -27,8 +27,11 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
           {/* Brand Manifesto */}
           <div className="footer-brand">
             <div className="footer-logo">
-              <span className="logo-reach">REACH</span>
-              <span className="logo-chauffeur gradient-text-gold">CHAUFFEUR</span>
+              <img src="/reach-logo.png" alt="Reach Chauffeur Logo" className="brand-logo-img-footer" />
+              <div className="logo-text">
+                <span className="logo-reach">REACH</span>
+                <span className="logo-chauffeur gradient-text-gold">CHAUFFEUR</span>
+              </div>
             </div>
             <p className="footer-manifesto">
               Crafting premium travel narratives since 2018. We operate at the intersection of absolute punctuality, tailored privacy, and unmatched executive comfort.
@@ -53,11 +56,11 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
           <div className="footer-links-col">
             <h3>The Experience</h3>
             <ul className="footer-links">
-              <li><button onClick={() => handleLinkClick('home')}>Overview</button></li>
-              <li><button onClick={() => handleLinkClick('fleet')}>Fleet Matrix</button></li>
-              <li><button onClick={() => handleLinkClick('tracking')}>Live Tracking</button></li>
-              <li><button onClick={() => handleLinkClick('corporate')}>Corporate Portal</button></li>
-              <li><button onClick={() => handleLinkClick('news')}>News Hub</button></li>
+              <li><Link to="/" onClick={handleLinkClick}>Overview</Link></li>
+              <li><Link to="/fleets" onClick={handleLinkClick}>Fleet Matrix</Link></li>
+              <li><Link to="/tracking" onClick={handleLinkClick}>Live Tracking</Link></li>
+              <li><Link to="/corporate" onClick={handleLinkClick}>Corporate Portal</Link></li>
+              <li><Link to="/news" onClick={handleLinkClick}>News Hub</Link></li>
               <li><a href="/admin">Command Center (Admin)</a></li>
               <li><a href="/chauffeur">Chauffeur Portal</a></li>
             </ul>
@@ -67,10 +70,10 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
           <div className="footer-links-col">
             <h3>Elite Tiers</h3>
             <ul className="footer-links">
-              <li><button onClick={() => handleLinkClick('fleet')}>Executive Sedans</button></li>
-              <li><button onClick={() => handleLinkClick('fleet')}>Luxury SUVs</button></li>
-              <li><button onClick={() => handleLinkClick('fleet')}>Presidential Limousines</button></li>
-              <li><button onClick={() => handleLinkClick('fleet')}>New Arrivals</button></li>
+              <li><Link to="/fleets" onClick={handleLinkClick}>Executive Sedans</Link></li>
+              <li><Link to="/fleets" onClick={handleLinkClick}>Luxury SUVs</Link></li>
+              <li><Link to="/fleets" onClick={handleLinkClick}>Presidential Limousines</Link></li>
+              <li><Link to="/fleets" onClick={handleLinkClick}>New Arrivals</Link></li>
             </ul>
           </div>
 
@@ -105,7 +108,7 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
           <p className="copyright">© 2026 Reach Chauffeur. All rights reserved.</p>
           <div className="legal-links">
             <a href="#terms" onClick={(e) => { e.preventDefault(); if (onOpenLegal) onOpenLegal('terms'); }}>Terms of Service</a>
-            <a href="#privacy" onClick={(e) => { e.preventDefault(); if (onOpenLegal) onOpenLegal('privacy'); }}>Privacy Charter</a>
+            <a href="#privacy" onClick={(e) => { e.preventDefault(); if (onOpenLegal) onOpenLegal('privacy'); }}>Privacy Center</a>
             <a href="#cookie" onClick={(e) => { e.preventDefault(); if (onOpenLegal) onOpenLegal('cookie'); }}>Cookie Policy</a>
           </div>
         </div>
@@ -113,7 +116,8 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
 
       <style>{`
         .footer-section {
-          background-color: var(--color-obsidian-light);
+          background-color: var(--color-bg-elevated);
+          color: var(--color-obsidian);
           border-top: 1px solid var(--glass-border);
           position: relative;
           z-index: 10;
@@ -148,20 +152,45 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
         }
 
         .footer-logo {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .brand-logo-img-footer {
+          width: 55px;
+          height: 55px;
+          object-fit: contain;
+          border-radius: 8px;
+        }
+
+        .logo-text {
+          display: flex;
+          flex-direction: column;
+          line-height: 1;
           font-family: 'Outfit', sans-serif;
-          font-size: 1.4rem;
-          font-weight: 800;
-          letter-spacing: 0.05em;
         }
 
         .footer-logo .logo-reach {
-          color: var(--color-platinum);
+          color: var(--color-obsidian);
+          font-size: 1.4rem;
+          font-weight: 800;
+          letter-spacing: 0.15em;
+        }
+
+        .logo-chauffeur {
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 0.25em;
+          text-transform: uppercase;
+          margin-top: 2px;
         }
 
         .footer-manifesto {
-          color: var(--color-silver);
+          color: var(--color-obsidian);
           font-size: 0.9rem;
           line-height: 1.6;
+          opacity: 0.8;
         }
 
         .social-links {
@@ -177,9 +206,9 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
           padding: 6px 12px;
           font-size: 0.75rem;
           border-radius: 20px;
-          background: rgba(255, 255, 255, 0.03);
+          background: rgba(0, 0, 0, 0.03);
           border: 1px solid var(--glass-border);
-          color: var(--color-silver);
+          color: var(--color-obsidian);
           transition: var(--transition-smooth);
         }
 
@@ -195,7 +224,7 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
           font-weight: 600;
           margin-bottom: 24px;
           letter-spacing: 0.02em;
-          color: var(--color-platinum);
+          color: var(--color-obsidian);
         }
 
         .footer-links {
@@ -208,7 +237,8 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
         .footer-links a, .footer-links button {
           background: none;
           border: none;
-          color: var(--color-silver);
+          color: var(--color-obsidian);
+          opacity: 0.8;
           font-family: 'Inter', sans-serif;
           font-size: 0.9rem;
           text-align: left;
@@ -221,6 +251,7 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
 
         .footer-links a:hover, .footer-links button:hover {
           color: var(--color-champagne);
+          opacity: 1;
           transform: translateX(4px);
         }
 
@@ -231,7 +262,8 @@ export default function Footer({ setCurrentPage, onOpenLegal }) {
         }
 
         .footer-newsletter p {
-          color: var(--color-silver);
+          color: var(--color-obsidian);
+          opacity: 0.8;
           font-size: 0.9rem;
           line-height: 1.6;
         }

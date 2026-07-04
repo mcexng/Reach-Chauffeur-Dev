@@ -117,7 +117,7 @@ export default function NewsHub({ articles = [] }) {
           position: absolute;
           top: 16px;
           left: 16px;
-          background: rgba(8, 8, 10, 0.75);
+          background: rgba(255, 255, 255, 0.75);
           backdrop-filter: blur(5px);
           border: 1px solid var(--glass-border);
           color: var(--color-champagne);
@@ -172,7 +172,7 @@ export default function NewsHub({ articles = [] }) {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(8, 8, 10, 0.9);
+          background: rgba(255, 255, 255, 0.9);
           backdrop-filter: blur(10px);
           display: flex;
           align-items: center;

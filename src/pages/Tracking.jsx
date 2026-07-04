@@ -79,6 +79,7 @@ export default function Tracking({ activeBooking }) {
       totalCost: 320000
     };
     setBooking(demo);
+    localStorage.setItem('activeBookingRef', demo.bookingRef);
     setEta(12);
     setStatusText('En route to pickup location');
   };
@@ -96,6 +97,7 @@ export default function Tracking({ activeBooking }) {
 
     if (found) {
       setBooking(found);
+      localStorage.setItem('activeBookingRef', found.bookingRef);
       setEta(9);
       if (found.status === 'Pending Admin Approval') {
         setStatusText('Request submitted to command center');

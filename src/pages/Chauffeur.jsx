@@ -102,7 +102,8 @@ export default function Chauffeur() {
         <style>{`
           .chauffeur-portal {
             min-height: 100vh;
-            background-color: var(--color-obsidian);
+            background-color: var(--color-bg-base);
+            color: var(--color-text-main);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -191,7 +192,8 @@ export default function Chauffeur() {
       <style>{`
         .chauffeur-portal-dashboard {
           min-height: 100vh;
-          background-color: var(--color-obsidian);
+          background-color: var(--color-bg-base);
+          color: var(--color-text-main);
           padding: 40px 20px;
           max-width: 800px;
           margin: 0 auto;

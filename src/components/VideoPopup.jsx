@@ -34,8 +34,8 @@ export default function VideoPopup({ isOpen, onClose, videoUrl, vehicleName }) {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(8, 8, 10, 0.9);
-          backdrop-filter: blur(10px);
+          background: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(15px);
           display: flex;
           align-items: center;
           justify-content: center;

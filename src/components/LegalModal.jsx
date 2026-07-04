@@ -40,7 +40,7 @@ export default function LegalModal({ isOpen, onClose, type }) {
       case 'privacy':
         return (
           <>
-            <h3>Privacy Charter</h3>
+            <h3>Privacy Center</h3>
             <p className="legal-update">Last Updated: June 2026</p>
             <div className="legal-body">
               <h4>1. High-Tier Discretion</h4>
@@ -91,11 +91,8 @@ export default function LegalModal({ isOpen, onClose, type }) {
       <style>{`
         .legal-modal-overlay {
           position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(8, 8, 10, 0.9);
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(255, 255, 255, 0.85); /* Light frosted overlay */
           backdrop-filter: blur(15px);
           display: flex;
           align-items: center;
@@ -111,8 +108,10 @@ export default function LegalModal({ isOpen, onClose, type }) {
           display: flex;
           flex-direction: column;
           border-radius: 20px;
-          border: 1px solid var(--glass-border);
+          background: rgba(255, 255, 255, 0.95); /* Light base */
+          border: 1px solid rgba(0, 0, 0, 0.1);
           overflow: hidden;
+          box-shadow: var(--glass-shadow);
         }
 
         .legal-modal-header {
@@ -120,14 +119,14 @@ export default function LegalModal({ isOpen, onClose, type }) {
           justify-content: space-between;
           align-items: center;
           padding: 20px 24px;
-          border-bottom: 1px solid var(--glass-border);
-          background: rgba(0,0,0,0.2);
+          border-bottom: 1px solid rgba(0,0,0,0.05);
+          background: rgba(255, 255, 255, 0.5);
         }
 
         .legal-close-btn {
           background: none;
           border: none;
-          color: var(--color-silver);
+          color: var(--color-primary);
           font-size: 1.8rem;
           cursor: pointer;
           line-height: 1;
@@ -145,7 +144,7 @@ export default function LegalModal({ isOpen, onClose, type }) {
 
         .legal-modal-content h3 {
           font-size: 1.6rem;
-          color: #fff;
+          color: var(--color-primary-dark);
           margin-bottom: 5px;
         }
 
@@ -157,23 +156,23 @@ export default function LegalModal({ isOpen, onClose, type }) {
 
         .legal-body h4 {
           font-size: 1.05rem;
-          color: var(--color-champagne);
+          color: var(--color-primary);
           margin: 20px 0 10px 0;
         }
 
         .legal-body p {
           font-size: 0.9rem;
-          color: var(--color-silver);
+          color: var(--color-text-main);
           line-height: 1.6;
         }
 
         .legal-highlight-box {
-          background: rgba(212, 175, 55, 0.08);
-          border: 1px solid rgba(212, 175, 55, 0.25);
+          background: rgba(212, 175, 55, 0.1);
+          border: 1px solid rgba(212, 175, 55, 0.3);
           padding: 15px;
           border-radius: 8px;
           font-size: 0.85rem;
-          color: #fff;
+          color: var(--color-primary-dark);
           margin: 15px 0;
           line-height: 1.6;
         }
@@ -185,10 +184,10 @@ export default function LegalModal({ isOpen, onClose, type }) {
 
         .legal-modal-footer {
           padding: 15px 24px;
-          border-top: 1px solid var(--glass-border);
+          border-top: 1px solid rgba(0,0,0,0.05);
           display: flex;
           justify-content: flex-end;
-          background: rgba(0,0,0,0.1);
+          background: rgba(255, 255, 255, 0.5);
         }
       `}</style>
     </div>

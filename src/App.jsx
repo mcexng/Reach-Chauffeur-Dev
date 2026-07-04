@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -10,10 +11,10 @@ import Admin from './pages/Admin';
 import Chauffeur from './pages/Chauffeur';
 import BookingEngine from './components/BookingEngine';
 import LegalModal from './components/LegalModal';
+import PwaInstallPopup from './components/PwaInstallPopup';
 import { db } from './utils/db';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('home');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   
@@ -45,10 +46,13 @@ export default function App() {
     setBookingsCount(allBookings.length);
     
     // Update active booking status dynamically if currently tracked
-    if (activeBooking) {
-      const current = allBookings.find(b => b.bookingRef === activeBooking.bookingRef);
+    let currentRef = activeBooking?.bookingRef || localStorage.getItem('activeBookingRef');
+    if (currentRef) {
+      const current = allBookings.find(b => b.bookingRef === currentRef);
       if (current) {
         setActiveBooking(current);
+      } else {
+        localStorage.removeItem('activeBookingRef');
       }
     }
   };
@@ -77,146 +81,88 @@ export default function App() {
 
   const handleBookingSuccess = (bookingDetails) => {
     // Refresh bookings count and synchronizations
+    localStorage.setItem('activeBookingRef', bookingDetails.bookingRef);
     refreshStates();
     setActiveBooking(bookingDetails);
     setIsBookingOpen(false);
-    
-    // Route user immediately to live tracking
-    setCurrentPage('tracking');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.location.href = '/tracking';
   };
-
-  // Sync state if user switches tabs to tracking to pull latest status
-  const handlePageChange = (pageId) => {
-    refreshStates();
-    setCurrentPage(pageId);
-  };
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return (
-          <Home 
-            onQuickBook={handleQuickBookFromHome}
-            setCurrentPage={handlePageChange} 
-          />
-        );
-      case 'fleet':
-        return (
-          <Fleet 
-            onOpenBooking={handleOpenBooking} 
-            quickBookDetails={prefillDetails}
-            vehicles={vehicles.filter(v => v.isActive)}
-          />
-        );
-      case 'tracking':
-        return (
-          <Tracking 
-            activeBooking={activeBooking} 
-            onSearchRefresh={refreshStates}
-          />
-        );
-      case 'corporate':
-        return (
-          <Corporate 
-            onOpenBooking={handleOpenBooking} 
-          />
-        );
-      case 'news':
-        return (
-          <NewsHub 
-            articles={articles}
-          />
-        );
-      case 'news':
-        return (
-          <NewsHub 
-            articles={articles}
-          />
-        );
-      default:
-        return (
-          <Home 
-            onQuickBook={handleQuickBookFromHome}
-            setCurrentPage={handlePageChange} 
-          />
-        );
-    }
-  };
-
-  // If path is /admin, completely isolate the layout
-  if (window.location.pathname.startsWith('/admin')) {
-    return (
-      <div className="admin-isolated-shell">
-        <Admin 
-          onFleetUpdate={refreshStates}
-          onNewsUpdate={refreshStates}
-          onBookingsUpdate={refreshStates}
-        />
-        <style>{`
-          .admin-isolated-shell {
-            min-height: 100vh;
-            background-color: var(--color-obsidian);
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // If path is /chauffeur, completely isolate the layout
-  if (window.location.pathname.startsWith('/chauffeur')) {
-    return <Chauffeur />;
-  }
 
   return (
-    <div className="app-shell">
-      {/* Premium Header */}
-      <Navbar 
-        currentPage={currentPage} 
-        setCurrentPage={handlePageChange} 
-        onOpenBooking={() => handleOpenBooking()} 
-      />
+    <Router>
+      <Routes>
+        <Route path="/admin/*" element={
+          <div className="admin-isolated-shell">
+            <Admin 
+              onFleetUpdate={refreshStates}
+              onNewsUpdate={refreshStates}
+              onBookingsUpdate={refreshStates}
+            />
+            <style>{`
+              .admin-isolated-shell {
+                min-height: 100vh;
+                background-color: var(--color-bg-base);
+                color: var(--color-text-main);
+              }
+            `}</style>
+          </div>
+        } />
+        <Route path="/chauffeur/*" element={<Chauffeur />} />
+        
+        <Route path="*" element={
+          <div className="app-shell">
+            {/* Premium Header */}
+            <Navbar onOpenBooking={() => handleOpenBooking()} />
 
-      {/* Main Content Pane */}
-      <main className="main-content-pane">
-        {renderPage()}
-      </main>
+            {/* Main Content Pane */}
+            <main className="main-content-pane">
+              <Routes>
+                <Route path="/" element={<Home onQuickBook={handleQuickBookFromHome} vehicles={vehicles.filter(v => v.isActive)} />} />
+                <Route path="/fleets" element={<Fleet onOpenBooking={handleOpenBooking} quickBookDetails={prefillDetails} vehicles={vehicles.filter(v => v.isActive)} />} />
+                <Route path="/tracking" element={<Tracking activeBooking={activeBooking} onSearchRefresh={refreshStates} />} />
+                <Route path="/corporate" element={<Corporate onOpenBooking={handleOpenBooking} />} />
+                <Route path="/news" element={<NewsHub articles={articles} />} />
+              </Routes>
+            </main>
 
-      {/* Footer */}
-      <Footer 
-        setCurrentPage={handlePageChange} 
-        onOpenLegal={(type) => { setLegalType(type); setLegalModalOpen(true); }}
-      />
+            {/* Footer */}
+            <Footer onOpenLegal={(type) => { setLegalType(type); setLegalModalOpen(true); }} />
 
-      {/* Multi-step Booking Form */}
-      <BookingEngine
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        selectedVehicle={selectedVehicle}
-        prefillDetails={prefillDetails}
-        onBookingSuccess={handleBookingSuccess}
-      />
+            {/* Multi-step Booking Form */}
+            <BookingEngine
+              isOpen={isBookingOpen}
+              onClose={() => setIsBookingOpen(false)}
+              selectedVehicle={selectedVehicle}
+              prefillDetails={prefillDetails}
+              onBookingSuccess={handleBookingSuccess}
+            />
 
-      {/* Legal policies (Terms, Privacy, Cookies) Modal */}
-      <LegalModal 
-        isOpen={legalModalOpen} 
-        onClose={() => setLegalModalOpen(false)} 
-        type={legalType} 
-      />
+            {/* Legal policies (Terms, Privacy, Cookies) Modal */}
+            <LegalModal 
+              isOpen={legalModalOpen} 
+              onClose={() => setLegalModalOpen(false)} 
+              type={legalType} 
+            />
 
-      <style>{`
-        .app-shell {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          position: relative;
-        }
+            {/* Global PWA Install Prompt for Mobile */}
+            <PwaInstallPopup />
 
-        .main-content-pane {
-          flex-grow: 1;
-          padding-top: 100px; /* spacing for floating navbar */
-        }
-      `}</style>
-    </div>
+            <style>{`
+              .app-shell {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                position: relative;
+              }
+
+              .main-content-pane {
+                flex-grow: 1;
+                padding-top: 100px;
+              }
+            `}</style>
+          </div>
+        } />
+      </Routes>
+    </Router>
   );
 }

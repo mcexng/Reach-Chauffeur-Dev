@@ -1,480 +1,440 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function Home({ onQuickBook, setCurrentPage }) {
+export default function Home({ onQuickBook, vehicles = [] }) {
+  const navigate = useNavigate();
   const [pickup, setPickup] = useState('');
+  const [dropoff, setDropoff] = useState('');
   const [date, setDate] = useState('');
-  const canvasRef = useRef(null);
-
-  // Cinematic night lights simulation for background
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    // Light beam particles representing city highway lights at night
-    const particles = [];
-    const particleCount = 20;
-
-    class LightBeam {
-      constructor() {
-        this.reset();
-      }
-
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = canvas.height + 20;
-        this.length = Math.random() * 200 + 100;
-        this.speed = Math.random() * 2 + 1;
-        this.angle = -Math.PI / 2 + (Math.random() * 0.2 - 0.1); // slightly tilted upwards
-        this.opacity = Math.random() * 0.4 + 0.1;
-        this.color = Math.random() > 0.5 ? '#D4AF37' : '#9CA3AF'; // Gold or Platinum
-        this.width = Math.random() * 1.5 + 0.5;
-      }
-
-      update() {
-        this.y -= this.speed;
-        this.x += Math.sin(this.angle) * this.speed;
-
-        if (this.y < -this.length) {
-          this.reset();
-        }
-      }
-
-      draw() {
-        ctx.beginPath();
-        const endX = this.x + Math.sin(this.angle) * this.length;
-        const endY = this.y - Math.cos(this.angle) * this.length;
-
-        const gradient = ctx.createLinearGradient(this.x, this.y, endX, endY);
-        gradient.addColorStop(0, 'transparent');
-        gradient.addColorStop(0.5, this.color);
-        gradient.addColorStop(1, 'transparent');
-
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = this.width;
-        ctx.lineCap = 'round';
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
-      }
-    }
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new LightBeam());
-    }
-
-    const animate = () => {
-      ctx.fillStyle = 'rgba(8, 8, 10, 0.2)'; // trail effect
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach((p) => {
-        p.update();
-        p.draw();
-      });
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
+  const [passengers, setPassengers] = useState('');
 
   const handleExploreSubmit = (e) => {
     e.preventDefault();
     if (!pickup || !date) return;
-    
-    // Save details to state, move to fleet page, and prefill details
     onQuickBook(pickup, date);
-    setCurrentPage('fleet');
+    navigate('/fleets');
     setTimeout(() => {
       const fleetSec = document.getElementById('fleet-selection-anchor');
-      if (fleetSec) {
-        fleetSec.scrollIntoView({ behavior: 'smooth' });
-      }
+      if (fleetSec) { fleetSec.scrollIntoView({ behavior: 'smooth' }); }
     }, 100);
   };
 
-  const trustMetrics = [
-    { value: '99.8%', label: 'Punctuality Rate' },
-    { value: '10+', label: 'Elite Vehicles' },
-    { value: '1k+', label: 'Executive Transfers' },
-    { value: '5-Star', label: 'Safety Verification' }
+  const defaultFleet = [
+    { name: 'Executive Sedan', desc: 'Sleek luxury for business professionals and standard airport transfers. Ensures quiet focus on the move.', img: 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?q=80&w=2115&auto=format&fit=crop' },
+    { name: 'Luxury SUV', desc: 'Spacious grandeur built for small delegations and extended itineraries with absolute comfort.', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=2070&auto=format&fit=crop' },
+    { name: 'First-Class Sprinter', desc: 'The ultimate mobile boardroom. Tailored for corporate roadshows and executive entourages.', img: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?q=80&w=2069&auto=format&fit=crop' }
   ];
 
-  const philosophyItems = [
-    {
-      title: 'Corporate Travel',
-      desc: 'Seamless inter-city routing, onboard workspace tools, and private Wi-Fi connectivity built for global executives.',
-      icon: '🏢'
-    },
-    {
-      title: 'Airport Transfers',
-      desc: 'Flight telemetry integration allows us to adapt in real time to any arrival shifts, greeting you immediately on landing.',
-      icon: '✈️'
-    },
-    {
-      title: 'Bespoke Events',
-      desc: 'Tailored transport coordinates, bridal party matrices, and red-carpet limousines to honor life’s grandest ceremonies.',
-      icon: '💍'
-    }
+  // Use the vehicles from DB if available, otherwise fall back to default
+  const displayFleet = vehicles.length > 0 ? vehicles.slice(0, 3).map(v => ({
+    name: v.name,
+    desc: v.tierLabel || v.tier || 'Premium chauffeur vehicle',
+    img: v.images?.[0] || v.image1 || defaultFleet[0].img
+  })) : defaultFleet;
+
+  const whyUs = [
+    { title: '99.8% Punctual', icon: '⏱️', desc: 'Our chauffeurs arrive 15 minutes prior to every scheduled departure.' },
+    { title: 'Elite Fleet', icon: '🚘', desc: 'Immaculately maintained vehicles reflecting uncompromising corporate standards.' },
+    { title: 'Secure & Discreet', icon: '🛡️', desc: 'Vetted professionals bound by strict non-disclosure and privacy protocols.' },
+    { title: 'Seamless Tech', icon: '✨', desc: 'Live flight tracking and instant adjustments for any itinerary changes.' }
   ];
 
   return (
-    <div className="home-container">
-      {/* Background Lights Canvas */}
-      <canvas ref={canvasRef} className="night-lights-canvas" />
-
-      {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-overlay"></div>
-        <div className="section-container hero-content-grid animate-slide-up">
-          <div className="hero-text-block">
-            <span className="gold-badge">★ REACH CHAUFFEUR PRIVATE ELITE</span>
-            <h1>
-              Your Destination Awaits.<br />
-              <span className="gradient-text-gold">Arrive in Uncompromising Luxury.</span>
-            </h1>
-            <p>
-              World-class chauffeured fleets for corporate elites, wedding celebrations, airport private transfers, and bespoke inter-city journeys.
-            </p>
+    <div className="home-layout">
+      {/* Hero Banner Area */}
+      <section className="hero-banner-wrapper">
+        <div className="hero-banner" style={{ backgroundImage: `url(${displayFleet[0]?.img})` }}>
+          <div className="hero-content">
+            <h1>Elevate Your Journey.<br/>Redefining Luxury Travel.</h1>
+            <p>Experience unparalleled comfort, professionalism, and discretion with our premium chauffeur service.</p>
+            <button className="btn-gold" onClick={() => document.getElementById('pickup-input').focus()}>BOOK YOUR RIDE</button>
           </div>
-
-          {/* Floating Booking Widget */}
-          <div className="hero-booking-widget glass-panel">
-            <h2>Reserve Your Chauffeur</h2>
-            <p className="widget-subtitle">Enter details to explore our executive tiers.</p>
-            
-            <form onSubmit={handleExploreSubmit} className="widget-form">
-              <div className="input-group">
-                <label>Pick-up Location</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Murtala Muhammed International Airport"
-                  className="glass-input"
-                  value={pickup}
-                  onChange={(e) => setPickup(e.target.value)}
-                  required
-                />
+        </div>
+         
+        {/* Horizontal Booking Widget */}
+        <div className="horizontal-widget-container">
+          <form onSubmit={handleExploreSubmit} className="horizontal-widget">
+            <div className="widget-fields">
+              <div className="field-group">
+                  <label>PICK-UP LOCATION</label>
+                  <div className="input-wrapper">
+                    <span className="icon">📍</span>
+                    <input id="pickup-input" type="text" placeholder="e.g. Airport" value={pickup} onChange={e=>setPickup(e.target.value)} required/>
+                  </div>
               </div>
-
-              <div className="input-group">
-                <label>Select Date</label>
-                <input
-                  type="date"
-                  className="glass-input"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  required
-                />
+              <div className="field-group">
+                  <label>DROP-OFF LOCATION</label>
+                  <div className="input-wrapper">
+                    <span className="icon">📍</span>
+                    <input type="text" placeholder="e.g. Hotel" value={dropoff} onChange={e=>setDropoff(e.target.value)}/>
+                  </div>
               </div>
-
-              <button type="submit" className="btn-champagne widget-btn">
-                Explore Fleet & Book Now
-              </button>
-            </form>
-          </div>
+              <div className="field-group">
+                <label>DATE & TIME</label>
+                <div className="input-wrapper">
+                  <span className="icon">📅</span>
+                  <input type="datetime-local" value={date} onChange={e=>setDate(e.target.value)} required/>
+                </div>
+              </div>
+              <div className="field-group">
+                <label>PASSENGERS</label>
+                <div className="input-wrapper">
+                  <span className="icon">👥</span>
+                  <select value={passengers} onChange={e=>setPassengers(e.target.value)}>
+                    <option value="">Select</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4+">4+</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field-group" style={{ flex: '0.3' }}>
+                <button type="submit" className="btn-gold" style={{ height: '48px', marginTop: '22px', width: '100%' }}>EXPLORE & BOOK</button>
+              </div>
+            </div>
+          </form>
         </div>
       </section>
 
-      {/* Trust Metrics Bar */}
-      <section className="metrics-section">
-        <div className="section-container">
-          <div className="metrics-grid glass-panel">
-            {trustMetrics.map((metric, idx) => (
-              <div key={idx} className="metric-item">
-                <div className="metric-value gradient-text-gold">{metric.value}</div>
-                <div className="metric-label">{metric.label}</div>
+      {/* Main Content Area */}
+      <section className="main-content-section">
+        <div className="two-column-layout">
+           
+          {/* Left Column: Fleet & About Image */}
+          <div className="left-column">
+            <h2>Our Premium Fleet</h2>
+            <div className="fleet-grid-3">
+              {displayFleet.map((car, idx) => (
+                <div key={idx} className="fleet-card">
+                  <img src={car.img} alt={car.name} />
+                  <h3>{car.name}</h3>
+                  <p>{car.desc}</p>
+                  <div className="gold-line"></div>
+                </div>
+              ))}
+            </div>
+             
+            <div className="about-image-section">
+              <h2>Why Reach Chauffeur?</h2>
+              <div className="about-image-card">
+                <img src={displayFleet[1]?.img || displayFleet[0]?.img} alt="Chauffeur Service" />
               </div>
-            ))}
+            </div>
           </div>
+
+          {/* Right Column: Why Us Features & Text */}
+          <div className="right-column">
+            <h2>Why Reach Chauffeur?</h2>
+            <div className="features-grid-2x2">
+              {whyUs.map((item, idx) => (
+                <div key={idx} className="feature-item">
+                  <div className="gold-circle-icon">{item.icon}</div>
+                  <h4>{item.title}</h4>
+                  <p>{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="about-text-section">
+              <p>We design travel templates that reflect your standards. Every ride features absolute comfort and discretion. Seamless inter-city routing, onboard workspace tools, and private connectivity built for global executives.</p>
+              <button className="btn-link-gold" onClick={() => navigate('/corporate')}>Explore Corporate Portal &gt;</button>
+            </div>
+          </div>
+
         </div>
       </section>
-
-      {/* Brand Philosophy Section */}
-      <section className="philosophy-section">
-        <div className="section-container">
-          <div className="section-header">
-            <span className="gold-badge">Our Services</span>
-            <h2>Tailored Journeys, Exquisite Conduct</h2>
-            <p className="section-subtitle">
-              We design travel templates that reflect your standards. Every ride features absolute comfort and discretion.
-            </p>
-          </div>
-
-          <div className="philosophy-grid">
-            {philosophyItems.map((item, idx) => (
-              <div key={idx} className="philosophy-card glass-panel glass-panel-hover">
-                <div className="card-icon">{item.icon}</div>
-                <h3>{item.title}</h3>
-                <p>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      
       <style>{`
-        .home-container {
-          position: relative;
+        .home-layout {
+          background-color: #FAFAFA;
+          color: #1E293B;
           min-height: 100vh;
-          overflow: hidden;
+          padding-bottom: 100px;
         }
 
-        .night-lights-canvas {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: 1;
-          pointer-events: none;
-          opacity: 0.85;
-        }
-
-        .hero-section {
+        /* Hero Banner */
+        .hero-banner-wrapper {
           position: relative;
-          min-height: 90vh;
-          display: flex;
-          align-items: center;
-          padding-top: 130px;
-          z-index: 2;
+          padding: 20px;
+          max-width: 1400px;
+          margin: 0 auto;
         }
 
-        .hero-overlay {
+        .hero-banner {
+          position: relative;
+          width: 100%;
+          height: 75vh;
+          border-radius: 32px;
+          background-size: cover;
+          background-position: center 30%;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+        }
+
+        .hero-banner::before {
+          content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: radial-gradient(circle at 70% 30%, rgba(212, 175, 55, 0.03) 0%, transparent 60%);
-          pointer-events: none;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: linear-gradient(to right, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
         }
 
-        .hero-content-grid {
-          display: grid;
-          grid-template-columns: 1.2fr 0.8fr;
-          gap: 60px;
-          align-items: center;
-        }
-
-        @media (max-width: 1024px) {
-          .hero-content-grid {
-            grid-template-columns: 1fr;
-            gap: 40px;
-            text-align: center;
-          }
-        }
-
-        .hero-text-block {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 24px;
-        }
-
-        @media (max-width: 1024px) {
-          .hero-text-block {
-            align-items: center;
-          }
-        }
-
-        .hero-text-block h1 {
-          font-size: 3.5rem;
-          line-height: 1.15;
-          font-weight: 800;
-        }
-
-        @media (max-width: 768px) {
-          .hero-text-block h1 {
-            font-size: 2.5rem;
-          }
-        }
-
-        .hero-text-block p {
-          font-size: 1.1rem;
-          color: var(--color-silver);
-          line-height: 1.6;
+        .hero-content {
+          position: relative;
+          z-index: 2;
           max-width: 600px;
+          padding: 60px;
         }
 
-        .hero-booking-widget {
-          padding: 40px;
-          border-radius: 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          border-color: rgba(255, 255, 255, 0.12);
-        }
-
-        @media (max-width: 480px) {
-          .hero-booking-widget {
-            padding: 24px;
-          }
-        }
-
-        .hero-booking-widget h2 {
-          font-size: 1.8rem;
+        .hero-content h1 {
+          font-family: 'Outfit', sans-serif;
+          font-size: 3.5rem;
+          color: #1E293B;
+          line-height: 1.1;
           font-weight: 700;
+          margin-bottom: 20px;
         }
 
-        .widget-subtitle {
-          font-size: 0.9rem;
-          color: var(--color-silver);
+        .hero-content p {
+          font-size: 1.1rem;
+          color: #475569;
+          margin-bottom: 30px;
+          line-height: 1.6;
         }
 
-        .widget-form {
+        .btn-gold {
+          background-color: #CBA557;
+          color: #fff;
+          border: none;
+          padding: 14px 32px;
+          border-radius: 50px;
+          font-weight: 600;
+          letter-spacing: 1px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .btn-gold:hover {
+          background-color: #B59045;
+          transform: translateY(-2px);
+        }
+
+        /* Booking Widget */
+        .horizontal-widget-container {
+          position: absolute;
+          bottom: -40px;
+          left: 60px;
+          right: 60px;
+          z-index: 10;
+        }
+
+        .horizontal-widget {
+          background: rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          border-radius: 20px;
+          padding: 24px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+        }
+
+        .widget-fields {
           display: flex;
-          flex-direction: column;
-          gap: 20px;
-          text-align: left;
+          justify-content: space-between;
+          gap: 16px;
         }
 
-        .input-group {
+        .field-group {
+          flex: 1;
           display: flex;
           flex-direction: column;
           gap: 8px;
         }
 
-        .input-group label {
-          font-size: 0.8rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--color-silver);
-          font-weight: 600;
+        .field-group label {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #1E293B;
+          letter-spacing: 0.5px;
         }
 
-        .widget-btn {
-          margin-top: 10px;
+        .input-wrapper {
+          display: flex;
+          align-items: center;
+          background: #fff;
+          border-radius: 8px;
+          padding: 0 12px;
+          height: 48px;
+          border: 1px solid #E2E8F0;
+        }
+
+        .input-wrapper .icon {
+          color: #94A3B8;
+          margin-right: 8px;
+        }
+
+        .input-wrapper input, .input-wrapper select {
+          border: none;
+          background: none;
+          outline: none;
           width: 100%;
+          font-family: 'Inter', sans-serif;
+          color: #334155;
+          font-size: 0.9rem;
         }
 
-        /* Metrics */
-        .metrics-section {
-          position: relative;
-          z-index: 2;
-          padding: 20px 0;
+        /* Main Content Layout */
+        .main-content-section {
+          max-width: 1400px;
+          margin: 100px auto 0;
+          padding: 0 20px;
         }
 
-        .metrics-grid {
+        .two-column-layout {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          padding: 30px;
-          border-radius: 20px;
-          text-align: center;
-          gap: 20px;
+          grid-template-columns: 2fr 1fr;
+          gap: 60px;
         }
 
-        @media (max-width: 768px) {
-          .metrics-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 30px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .metrics-grid {
-            grid-template-columns: 1fr;
-            gap: 20px;
-          }
-        }
-
-        .metric-value {
+        .left-column h2, .right-column h2 {
           font-family: 'Outfit', sans-serif;
-          font-size: 2.2rem;
-          font-weight: 800;
-          margin-bottom: 6px;
+          font-size: 2rem;
+          color: #1E293B;
+          margin-bottom: 30px;
         }
 
-        .metric-label {
+        /* Fleet Cards */
+        .fleet-grid-3 {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          margin-bottom: 60px;
+        }
+
+        .fleet-card img {
+          width: 100%;
+          height: 160px;
+          object-fit: cover;
+          border-radius: 12px;
+          margin-bottom: 16px;
+        }
+
+        .fleet-card h3 {
+          font-size: 1.1rem;
+          margin-bottom: 8px;
+          color: #1E293B;
+        }
+
+        .fleet-card p {
           font-size: 0.85rem;
-          color: var(--color-silver);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-weight: 500;
+          color: #64748B;
+          line-height: 1.5;
+          margin-bottom: 16px;
         }
 
-        /* Philosophy */
-        .philosophy-section {
-          position: relative;
-          z-index: 2;
+        .gold-line {
+          width: 40px;
+          height: 2px;
+          background-color: #CBA557;
         }
 
-        .section-header {
+        /* About Image Segment */
+        .about-image-card img {
+          width: 100%;
+          height: 300px;
+          object-fit: cover;
+          border-radius: 20px;
+        }
+
+        /* Why Us Features */
+        .features-grid-2x2 {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 30px;
+          margin-bottom: 60px;
+        }
+
+        .feature-item {
           text-align: center;
-          max-width: 700px;
-          margin: 0 auto 60px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 16px;
         }
 
-        .section-header h2 {
-          font-size: 2.4rem;
-          font-weight: 700;
-        }
-
-        .section-subtitle {
-          font-size: 1.05rem;
-          color: var(--color-silver);
-          line-height: 1.6;
-        }
-
-        .philosophy-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 32px;
-        }
-
-        @media (max-width: 900px) {
-          .philosophy-grid {
-            grid-template-columns: 1fr;
-            gap: 24px;
-          }
-        }
-
-        .philosophy-card {
-          padding: 40px;
-          border-radius: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-          text-align: left;
-        }
-
-        .card-icon {
-          font-size: 2.5rem;
-          background: rgba(255, 255, 255, 0.03);
+        .gold-circle-icon {
           width: 60px;
           height: 60px;
+          border-radius: 50%;
+          background-color: rgba(203, 165, 87, 0.1);
+          color: #CBA557;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 12px;
-          border: 1px solid var(--glass-border);
+          font-size: 1.5rem;
+          margin-bottom: 16px;
         }
 
-        .philosophy-card h3 {
-          font-size: 1.4rem;
-          color: var(--color-platinum);
-          font-weight: 600;
+        .feature-item h4 {
+          font-size: 1.1rem;
+          margin-bottom: 8px;
+          color: #1E293B;
         }
 
-        .philosophy-card p {
-          color: var(--color-silver);
+        .feature-item p {
+          font-size: 0.85rem;
+          color: #64748B;
+          line-height: 1.5;
+        }
+
+        .about-text-section p {
           font-size: 0.95rem;
+          color: #475569;
           line-height: 1.6;
+          margin-bottom: 16px;
+        }
+
+        .btn-link-gold {
+          background: none;
+          border: none;
+          color: #CBA557;
+          font-weight: 600;
+          cursor: pointer;
+          font-size: 0.95rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+          .two-column-layout {
+            grid-template-columns: 1fr;
+          }
+          
+          .horizontal-widget-container {
+            position: relative;
+            bottom: 0;
+            left: 0; right: 0;
+            margin-top: -40px;
+            padding: 0 20px;
+          }
+
+          .widget-fields {
+            flex-direction: column;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .hero-content h1 {
+            font-size: 2.5rem;
+          }
+          .fleet-grid-3 {
+            grid-template-columns: 1fr;
+          }
+          .features-grid-2x2 {
+            grid-template-columns: 1fr;
+          }
+          .hero-banner::before {
+            background: rgba(255,255,255,0.85);
+          }
         }
       `}</style>
     </div>
