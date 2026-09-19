@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../utils/db';
 import { dbFS } from '../utils/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { triggerPaymentReceivedAlert, triggerExtensionRequestAlert } from '../utils/notificationService';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -175,6 +176,13 @@ export default function Tracking({ activeBooking }) {
   const handlePaymentSent = async () => {
     await db.updateBookingStatus(booking.bookingRef, 'Payment Processing');
     setBooking({ ...booking, status: 'Payment Processing' });
+    
+    try {
+      await triggerPaymentReceivedAlert(booking.bookingRef, booking.personal?.name || 'Unknown');
+    } catch (e) {
+      console.error('Failed to send payment alert:', e);
+    }
+    
     alert('Payment flagged as sent. Command Center will verify shortly.');
   };
 
@@ -182,6 +190,12 @@ export default function Tracking({ activeBooking }) {
     const ext = { hours: extensionHours, status: 'Pending Admin Approval' };
     await db.updateBookingExtension(booking.bookingRef, ext);
     setBooking({ ...booking, extension: ext });
+    
+    try {
+      await triggerExtensionRequestAlert(booking.bookingRef, `${extensionHours} hour(s)`);
+    } catch (e) {
+      console.error('Failed to send extension alert:', e);
+    }
   };
 
   const handleExtensionPaymentSent = async () => {

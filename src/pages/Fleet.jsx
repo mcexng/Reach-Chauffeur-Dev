@@ -1,29 +1,12 @@
 import React, { useState } from 'react';
 import VideoPopup from '../components/VideoPopup';
 
-export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }) {
+export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [], fleetUpdates = [] }) {
   const [activeTier, setActiveTier] = useState('all');
   const [activeVideo, setActiveVideo] = useState({ isOpen: false, url: '', name: '' });
   const [imageIndexes, setImageIndexes] = useState({});
 
   const fleetData = vehicles;
-
-  const newArrivals = [
-    {
-      id: 'rr-spectre',
-      name: '2026 Rolls-Royce Spectre (All-Electric)',
-      tierLabel: 'Presidential Limousine',
-      desc: 'The defining statement in silent, all-electric ultra-luxury. Just delivered to our Lagos garage.',
-      image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=300'
-    },
-    {
-      id: 'maybach-s-2026',
-      name: '2026 Mercedes-Maybach S-Class',
-      tierLabel: 'Presidential Limousine',
-      desc: 'Configured with executive writing tables and champagne flute holsters.',
-      image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=300'
-    }
-  ];
 
   const handleNextImage = (carId, imagesLength, e) => {
     e.stopPropagation();
@@ -99,6 +82,7 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
                       alt={car.name} 
                       className="slider-image animate-fade-in"
                       key={currentImgIdx}
+                      onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=600'; }}
                     />
                     
                     {/* Navigation Arrows */}
@@ -189,16 +173,20 @@ export default function Fleet({ onOpenBooking, quickBookDetails, vehicles = [] }
           </div>
 
           <div className="new-arrivals-list">
-            {newArrivals.map((arrival) => (
-              <div key={arrival.id} className="arrival-item glass-panel">
-                <img src={arrival.image} alt={arrival.name} />
-                <div className="arrival-details">
-                  <span className="arrival-tag">JUST ADDED</span>
-                  <h4>{arrival.name}</h4>
-                  <p>{arrival.desc}</p>
+            {fleetUpdates.length === 0 ? (
+              <p style={{ color: 'var(--color-silver)', fontSize: '0.85rem' }}>No recent deliveries tracked.</p>
+            ) : (
+              fleetUpdates.map((arrival) => (
+                <div key={arrival.id} className="arrival-item glass-panel">
+                  {arrival.image && <img src={arrival.image} alt={arrival.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=300'; }} />}
+                  <div className="arrival-details">
+                    <span className="arrival-tag">{arrival.tag || 'JUST ADDED'}</span>
+                    <h4>{arrival.name}</h4>
+                    <p>{arrival.desc}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div className="garage-manifesto glass-panel">

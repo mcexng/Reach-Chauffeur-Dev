@@ -9,6 +9,50 @@ import {
   deleteDoc 
 } from 'firebase/firestore';
 
+const DEFAULT_ARTICLES = [
+  {
+    id: 'art-1',
+    title: 'The Silent Cabin: Under the Hood of the Mercedes-Maybach S-Class',
+    category: 'Vehicle Review',
+    readTime: '5 min read',
+    summary: 'An inside look into active noise cancellation, executive recliners, and presidential protection packages.',
+    image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=600',
+    content: 'The Mercedes-Maybach S-Class represents the pinnacle of automotive luxury engineering. With acoustic glass laminates, active road noise compensation embedded into the Burmester High-End 4D sound system, and first-class rear executive seating, every journey transforms into a sanctuary of tranquility.\n\nOur Lagos garage fleet is configured with full rear executive seating packages, champagne coolers, folding work tables, and dedicated 5G Wi-Fi hotspots for seamless productivity on the move.',
+    date: '2026-09-18'
+  },
+  {
+    id: 'art-2',
+    title: 'Private Jet to Chauffeur Tarmac Handshake: Aviation Protocol',
+    category: 'Luxury Travel',
+    readTime: '4 min read',
+    summary: 'How Reach Chauffeur coordinates directly with FBO handlers for direct tarmac pickups at Murtala Muhammed Airport.',
+    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=600',
+    content: 'Precision timing and discreet security clearance are essential when transitioning from private aviation to ground transport. Our dispatch system synchronizes with live flight telemetry.\n\nUpon touchdown, verified presidential detail chauffeurs step up directly to the airstairs, ensuring seamless tarmac transfer without security delay.',
+    date: '2026-09-15'
+  }
+];
+
+const DEFAULT_FLEET_UPDATES = [
+  {
+    id: 'rr-spectre',
+    name: '2026 Rolls-Royce Spectre (All-Electric)',
+    tierLabel: 'Presidential Limousine',
+    tag: 'JUST ADDED',
+    desc: 'The defining statement in silent, all-electric ultra-luxury. Just delivered to our Lagos garage.',
+    image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&q=80&w=300',
+    date: '2026-09-19'
+  },
+  {
+    id: 'maybach-s-2026',
+    name: '2026 Mercedes-Maybach S-Class',
+    tierLabel: 'Presidential Limousine',
+    tag: 'JUST ADDED',
+    desc: 'Configured with executive writing tables and champagne flute holsters.',
+    image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=300',
+    date: '2026-09-17'
+  }
+];
+
 export const db = {
   // Initialization - placeholder for backwards compatibility
   init: async () => {
@@ -43,9 +87,9 @@ export const db = {
         specs: car.specs || {
           passengers: car.passengers,
           luggage: car.luggage,
-          wifi: car.wifi,
-          refreshments: car.refreshments,
-          privacy: car.privacy,
+          wifi: car.wifi || '5G Dedicated Hotspot',
+          refreshments: car.refreshments || 'Dom Pérignon Chilled + Gold Standard Water',
+          privacy: car.privacy || 'Level 4 Max',
           color: car.color,
           licensePlate: car.licenseplate
         }
@@ -75,9 +119,9 @@ export const db = {
         image2: vehicle.images?.[1] || '',
         image3: vehicle.images?.[2] || '',
         videourl: vehicle.videoUrl || '',
-        wifi: vehicle.specs?.wifi || '',
-        refreshments: vehicle.specs?.refreshments || '',
-        privacy: vehicle.specs?.privacy || '',
+        wifi: vehicle.specs?.wifi || '5G Dedicated Hotspot',
+        refreshments: vehicle.specs?.refreshments || 'Dom Pérignon Chilled + Gold Standard Water',
+        privacy: vehicle.specs?.privacy || 'Level 4 Max',
         passengers: vehicle.specs?.passengers || 4,
         luggage: vehicle.specs?.luggage || 2,
         color: vehicle.specs?.color || 'Midnight Obsidian Black',
@@ -87,6 +131,7 @@ export const db = {
       await setDoc(doc(dbFS, 'vehicles', vehicle.id), flatVehicle);
     } catch (e) {
       console.error('Error adding vehicle:', e);
+      throw e;
     }
   },
 
@@ -95,6 +140,7 @@ export const db = {
       await deleteDoc(doc(dbFS, 'vehicles', id));
     } catch (e) {
       console.error('Error deleting vehicle:', e);
+      throw e;
     }
   },
 
@@ -103,6 +149,75 @@ export const db = {
       await updateDoc(doc(dbFS, 'vehicles', id), { is_active: isActive });
     } catch (e) {
       console.error('Error toggling vehicle status:', e);
+      throw e;
+    }
+  },
+
+  // -------------------------------------------------------------
+  // FLEET UPDATES / NEW DELIVERIES
+  // -------------------------------------------------------------
+  getFleetUpdates: async () => {
+    try {
+      const querySnapshot = await getDocs(collection(dbFS, 'fleet_updates'));
+      const data = [];
+      querySnapshot.forEach((docSnap) => {
+        data.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      if (data.length === 0) {
+        return DEFAULT_FLEET_UPDATES;
+      }
+      return data.map(u => ({
+        ...u,
+        tierLabel: u.tierLabel || u.tierlabel || 'Presidential Limousine',
+        name: u.name || u.title || ''
+      })).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    } catch (e) {
+      console.error('Error fetching fleet updates:', e);
+      return DEFAULT_FLEET_UPDATES;
+    }
+  },
+
+  addFleetUpdate: async (updateData) => {
+    try {
+      const id = updateData.id || 'del-' + Date.now();
+      const flat = {
+        id,
+        name: updateData.name || updateData.title || '',
+        tierlabel: updateData.tierLabel || 'Presidential Limousine',
+        tag: updateData.tag || 'JUST ADDED',
+        desc: updateData.desc || updateData.description || '',
+        image: updateData.image || '',
+        date: updateData.date || new Date().toISOString().split('T')[0]
+      };
+      await setDoc(doc(dbFS, 'fleet_updates', id), flat);
+      return flat;
+    } catch (e) {
+      console.error('Error adding fleet update:', e);
+      throw e;
+    }
+  },
+
+  updateFleetUpdate: async (id, updateData) => {
+    try {
+      const flat = {};
+      if (updateData.name !== undefined) flat.name = updateData.name;
+      if (updateData.tierLabel !== undefined) flat.tierlabel = updateData.tierLabel;
+      if (updateData.tag !== undefined) flat.tag = updateData.tag;
+      if (updateData.desc !== undefined) flat.desc = updateData.desc;
+      if (updateData.image !== undefined) flat.image = updateData.image;
+      await updateDoc(doc(dbFS, 'fleet_updates', id), flat);
+    } catch (e) {
+      console.error('Error updating fleet update:', e);
+      throw e;
+    }
+  },
+
+  deleteFleetUpdate: async (id) => {
+    try {
+      await deleteDoc(doc(dbFS, 'fleet_updates', id));
+    } catch (e) {
+      console.error('Error deleting fleet update:', e);
+      throw e;
     }
   },
 
@@ -116,13 +231,16 @@ export const db = {
       querySnapshot.forEach((doc) => {
         data.push({ id: doc.id, ...doc.data() });
       });
+      if (data.length === 0) {
+        return DEFAULT_ARTICLES;
+      }
       return data.map(art => ({
         ...art,
         readTime: art.readtime || art.readTime
-      }));
+      })).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     } catch (e) {
       console.error('Error fetching articles:', e);
-      return [];
+      return DEFAULT_ARTICLES;
     }
   },
 
@@ -133,15 +251,26 @@ export const db = {
         id: article.id,
         title: article.title || '',
         category: article.category || '',
-        readtime: article.readTime || '',
+        readtime: article.readTime || article.readtime || '',
         summary: article.summary || '',
         image: article.image || '',
         content: article.content || '',
         date: article.date || new Date().toISOString().split('T')[0]
       };
       await setDoc(doc(dbFS, 'articles', article.id), flatArticle);
+      return flatArticle;
     } catch (e) {
       console.error('Error adding article:', e);
+      throw e;
+    }
+  },
+
+  updateArticle: async (id, updates) => {
+    try {
+      await updateDoc(doc(dbFS, 'articles', id), updates);
+    } catch (e) {
+      console.error('Error updating article:', e);
+      throw e;
     }
   },
 
@@ -150,6 +279,7 @@ export const db = {
       await deleteDoc(doc(dbFS, 'articles', id));
     } catch (e) {
       console.error('Error deleting article:', e);
+      throw e;
     }
   },
 
@@ -209,7 +339,7 @@ export const db = {
       const updatePayload = { status };
       if (extraData.dispatchTime !== undefined) updatePayload.dispatchtime = extraData.dispatchTime;
       if (extraData.driver_id !== undefined) updatePayload.driver_id = extraData.driver_id;
-      if (extraData.endTime !== undefined) updatePayload.endtime = extraData.endTime;
+      if (extraData.endTime !== undefined) updatePayload.endTime = extraData.endTime;
       if (extraData.assigned_vehicle_id !== undefined) updatePayload.assigned_vehicle_id = extraData.assigned_vehicle_id;
       if (extraData.assigned_license_plate !== undefined) updatePayload.assigned_license_plate = extraData.assigned_license_plate;
       
@@ -370,8 +500,9 @@ export const db = {
     const articles = await db.getArticles();
     const bookings = await db.getBookings();
     const corpAccounts = await db.getCorpAccounts();
+    const fleetUpdates = await db.getFleetUpdates();
     
-    return JSON.stringify({ vehicles, articles, bookings, corpAccounts }, null, 2);
+    return JSON.stringify({ vehicles, articles, bookings, corpAccounts, fleetUpdates }, null, 2);
   },
 
   importDatabase: async (jsonString) => {
@@ -388,6 +519,9 @@ export const db = {
       }
       if (data.corpAccounts) {
         for (const c of data.corpAccounts) await db.registerCorpAccount(c);
+      }
+      if (data.fleetUpdates) {
+        for (const u of data.fleetUpdates) await db.addFleetUpdate(u);
       }
       return true;
     } catch (e) {
@@ -509,14 +643,71 @@ export const db = {
   },
 
   // -------------------------------------------------------------
-  // MEDIA UPLOADS (Base64 conversion, fully independent and free)
+  // MEDIA UPLOADS (Canvas-compressed Base64 conversion, fast & under Firestore limits)
   // -------------------------------------------------------------
   uploadMedia: async (file) => {
     if (!file) return null;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        if (file.type && file.type.startsWith('image/')) {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const maxDim = 1000;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.75));
+          };
+          img.onerror = () => resolve(dataUrl);
+          img.src = dataUrl;
+        } else {
+          resolve(dataUrl);
+        }
+      };
+      reader.onerror = (err) => reject(err);
       reader.readAsDataURL(file);
     });
+  },
+
+  // -------------------------------------------------------------
+  // ADMIN AUTHENTICATION
+  // -------------------------------------------------------------
+  getAdminAuth: async () => {
+    try {
+      const docSnap = await getDoc(doc(dbFS, 'settings', 'adminAuth'));
+      if (docSnap.exists()) {
+        return docSnap.data();
+      }
+      return { email: 'reachchauffeur@gmail.com', password: 'reach2026' };
+    } catch (e) {
+      console.error('Error fetching admin auth:', e);
+      return { email: 'reachchauffeur@gmail.com', password: 'reach2026' };
+    }
+  },
+
+  updateAdminAuth: async (authData) => {
+    try {
+      await setDoc(doc(dbFS, 'settings', 'adminAuth'), authData);
+      return true;
+    } catch (e) {
+      console.error('Error updating admin auth:', e);
+      return false;
+    }
   }
 };
+

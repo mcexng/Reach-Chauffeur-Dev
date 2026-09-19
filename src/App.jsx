@@ -25,6 +25,7 @@ export default function App() {
   // Dynamic states synchronized with localStorage
   const [vehicles, setVehicles] = useState([]);
   const [articles, setArticles] = useState([]);
+  const [fleetUpdates, setFleetUpdates] = useState([]);
   const [bookingsCount, setBookingsCount] = useState(0);
   
   // Shared quick-booking prefill state
@@ -42,6 +43,7 @@ export default function App() {
   const refreshStates = async () => {
     setVehicles(await db.getVehicles());
     setArticles(await db.getArticles());
+    setFleetUpdates(await db.getFleetUpdates());
     const allBookings = await db.getBookings();
     setBookingsCount(allBookings.length);
     
@@ -118,7 +120,7 @@ export default function App() {
             <main className="main-content-pane">
               <Routes>
                 <Route path="/" element={<Home onQuickBook={handleQuickBookFromHome} vehicles={vehicles.filter(v => v.isActive)} />} />
-                <Route path="/fleets" element={<Fleet onOpenBooking={handleOpenBooking} quickBookDetails={prefillDetails} vehicles={vehicles.filter(v => v.isActive)} />} />
+                <Route path="/fleets" element={<Fleet onOpenBooking={handleOpenBooking} quickBookDetails={prefillDetails} vehicles={vehicles.filter(v => v.isActive)} fleetUpdates={fleetUpdates} />} />
                 <Route path="/tracking" element={<Tracking activeBooking={activeBooking} onSearchRefresh={refreshStates} />} />
                 <Route path="/corporate" element={<Corporate onOpenBooking={handleOpenBooking} />} />
                 <Route path="/news" element={<NewsHub articles={articles} />} />

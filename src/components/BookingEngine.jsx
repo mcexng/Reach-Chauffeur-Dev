@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../utils/db';
+import { triggerNewBookingAlert } from '../utils/notificationService';
 
 const AddressAutocomplete = ({ label, placeholder, value, onChange, className }) => {
   const [query, setQuery] = useState(value || '');
@@ -283,12 +284,19 @@ export default function BookingEngine({ isOpen, onClose, selectedVehicle: initia
           bookingRef,
           vehicle: selectedVehicle.name,
           personal,
-          logistics: { ...logistics, days: bookingType === 'multiday' ? days : undefined },
+          logistics: { ...logistics, days: bookingType === 'multiday' ? days : null },
           bookingType,
           totalCost: rates.promo,
           status: 'Pending Admin Approval'
         };
         await db.addBooking(bookingRecord);
+        
+        // Trigger Notifications
+        try {
+          await triggerNewBookingAlert(bookingRecord);
+        } catch (e) {
+          console.error('Failed to trigger booking alert:', e);
+        }
         
         // Increment promo code usage if applicable
         if (appliedPromo) {

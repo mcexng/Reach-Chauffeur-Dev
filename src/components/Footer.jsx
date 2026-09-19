@@ -52,31 +52,6 @@ export default function Footer({ onOpenLegal }) {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="footer-links-col">
-            <h3>The Experience</h3>
-            <ul className="footer-links">
-              <li><Link to="/" onClick={handleLinkClick}>Overview</Link></li>
-              <li><Link to="/fleets" onClick={handleLinkClick}>Fleet Matrix</Link></li>
-              <li><Link to="/tracking" onClick={handleLinkClick}>Live Tracking</Link></li>
-              <li><Link to="/corporate" onClick={handleLinkClick}>Corporate Portal</Link></li>
-              <li><Link to="/news" onClick={handleLinkClick}>News Hub</Link></li>
-              <li><a href="/admin">Command Center (Admin)</a></li>
-              <li><a href="/chauffeur">Chauffeur Portal</a></li>
-            </ul>
-          </div>
-
-          {/* Fleet Tiers */}
-          <div className="footer-links-col">
-            <h3>Elite Tiers</h3>
-            <ul className="footer-links">
-              <li><Link to="/fleets" onClick={handleLinkClick}>Executive Sedans</Link></li>
-              <li><Link to="/fleets" onClick={handleLinkClick}>Luxury SUVs</Link></li>
-              <li><Link to="/fleets" onClick={handleLinkClick}>Presidential Limousines</Link></li>
-              <li><Link to="/fleets" onClick={handleLinkClick}>New Arrivals</Link></li>
-            </ul>
-          </div>
-
           {/* Newsletter */}
           <div className="footer-newsletter">
             <h3>Join the Elite Circle</h3>
@@ -126,8 +101,8 @@ export default function Footer({ onOpenLegal }) {
 
         .footer-grid {
           display: grid;
-          grid-template-columns: 1.5fr 1fr 1fr 1.5fr;
-          gap: 48px;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 60px;
           margin-bottom: 60px;
         }
 

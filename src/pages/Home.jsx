@@ -43,7 +43,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
     <div className="home-layout">
       {/* Hero Banner Area */}
       <section className="hero-banner-wrapper">
-        <div className="hero-banner" style={{ backgroundImage: `url(${displayFleet[0]?.img})` }}>
+        <div className="hero-banner" style={{ backgroundImage: `url(${displayFleet[0]?.img}), url(${defaultFleet[0].img})` }}>
           <div className="hero-content">
             <h1>Elevate Your Journey.<br/>Redefining Luxury Travel.</h1>
             <p>Experience unparalleled comfort, professionalism, and discretion with our premium chauffeur service.</p>
@@ -107,7 +107,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
             <div className="fleet-grid-3">
               {displayFleet.map((car, idx) => (
                 <div key={idx} className="fleet-card">
-                  <img src={car.img} alt={car.name} />
+                  <img src={car.img} alt={car.name} onError={(e) => { e.target.onerror = null; e.target.src = defaultFleet[idx % defaultFleet.length].img; }} />
                   <h3>{car.name}</h3>
                   <p>{car.desc}</p>
                   <div className="gold-line"></div>
@@ -118,7 +118,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
             <div className="about-image-section">
               <h2>Why Reach Chauffeur?</h2>
               <div className="about-image-card">
-                <img src={displayFleet[1]?.img || displayFleet[0]?.img} alt="Chauffeur Service" />
+                <img src={displayFleet[1]?.img || displayFleet[0]?.img} alt="Chauffeur Service" onError={(e) => { e.target.onerror = null; e.target.src = defaultFleet[1]?.img || defaultFleet[0].img; }} />
               </div>
             </div>
           </div>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../utils/db';
 import { dbFS } from '../utils/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { triggerAdminApprovalAlert, triggerChauffeurDispatchedAlert, triggerRideEndedAlert } from '../utils/notificationService';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -42,9 +43,13 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
   const [articles, setArticles] = useState([]);
   const [corpAccounts, setCorpAccounts] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [fleetUpdates, setFleetUpdates] = useState([]);
   
-  // Admin Security
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Admin Security (Persisted across refreshes)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('reach_admin_authenticated') === 'true';
+  });
+  const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
@@ -63,6 +68,11 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
   const [isUploading, setIsUploading] = useState(false);
 
   const fileInputRef = useRef(null);
+
+  // Edit states
+  const [editingCar, setEditingCar] = useState(null);
+  const [editingArticle, setEditingArticle] = useState(null);
+  const [editingFleetUpdate, setEditingFleetUpdate] = useState(null);
 
   // Form states - Add Vehicle
   const [newCar, setNewCar] = useState({
@@ -89,6 +99,17 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
     licensePlate: 'Pending Registry',
     image1File: null,
     videoUrlFile: null
+  });
+
+  // Form states - Fleet Update / New Delivery
+  const [newFleetUpdate, setNewFleetUpdate] = useState({
+    id: '',
+    name: '',
+    tierLabel: 'Presidential Limousine',
+    tag: 'JUST ADDED',
+    desc: '',
+    image: '',
+    imageFile: null
   });
 
   // Form states - Add Article
@@ -170,6 +191,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
   const refreshData = async () => {
     setBookings(await db.getBookings());
     setVehicles(await db.getVehicles());
+    setFleetUpdates(await db.getFleetUpdates());
     setPromoCodes(await db.getPromoCodes());
     setArticles(await db.getArticles());
     setCorpAccounts(await db.getCorpAccounts());
@@ -180,6 +202,17 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
 
   const handleStatusChange = async (ref, status, extraData = {}) => {
     await db.updateBookingStatus(ref, status, extraData);
+    
+    // Find the booking for notification context
+    const booking = bookings.find(b => b.bookingRef === ref);
+    if (booking) {
+      if (status === 'Awaiting Payment') {
+        await triggerAdminApprovalAlert(booking.personal?.email, ref);
+      } else if (status === 'Completed') {
+        await triggerRideEndedAlert(ref, booking.personal?.email);
+      }
+    }
+    
     refreshData();
     if (onBookingsUpdate) onBookingsUpdate();
   };
@@ -212,10 +245,11 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
     refreshData();
   };
 
-  const handleAdminLogin = (e) => {
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
-    // For MVP, we use a simple hardcoded passkey until Supabase Auth is fully linked
-    if (adminPassword === 'reach2026') {
+    const authData = await db.getAdminAuth();
+    if (adminEmail === authData.email && adminPassword === authData.password) {
+      localStorage.setItem('reach_admin_authenticated', 'true');
       setIsAuthenticated(true);
       setLoginError('');
     } else {
@@ -223,90 +257,128 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
     }
   };
 
-  // Fleet management operations
-  const handleAddVehicle = async (e) => {
+  const handleLogout = () => {
+    localStorage.removeItem('reach_admin_authenticated');
+    setIsAuthenticated(false);
+  };
+
+  // Fleet management operations (Register & Edit)
+  const handleSaveVehicle = async (e) => {
     e.preventDefault();
-    if (!newCar.name || !newCar.priceAirport || !newCar.price12hr || !newCar.price24hr || !newCar.priceHourly) {
+    const carSource = editingCar || newCar;
+    if (!carSource.name || !carSource.priceAirport || !carSource.price12hr || !carSource.price24hr || !carSource.priceHourly) {
       alert('Please fill in Name and all four Pricing fields.');
       return;
     }
 
     setIsUploading(true);
     try {
-      let imgUrl = newCar.image1 || 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=600';
-      if (newCar.image1File) {
-        imgUrl = await db.uploadMedia(newCar.image1File) || imgUrl;
+      let imgUrl = carSource.image1 || carSource.images?.[0] || 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=600';
+      if (carSource.image1File) {
+        imgUrl = await db.uploadMedia(carSource.image1File) || imgUrl;
       }
 
-      let vidUrl = newCar.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-luxury-black-car-driving-through-city-at-night-42171-large.mp4';
-      if (newCar.videoUrlFile) {
-        vidUrl = await db.uploadMedia(newCar.videoUrlFile) || vidUrl;
+      let vidUrl = carSource.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-luxury-black-car-driving-through-city-at-night-42171-large.mp4';
+      if (carSource.videoUrlFile) {
+        vidUrl = await db.uploadMedia(carSource.videoUrlFile) || vidUrl;
       }
 
       const carData = {
-        id: newCar.id || newCar.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        name: newCar.name,
-        tier: newCar.tier,
-        tierLabel: newCar.tierLabel,
-        basePrice: Number(newCar.priceHourly),
-        standardPrice: Number(newCar.price12hr),
-        priceAirport: Number(newCar.priceAirport),
-        price12hr: Number(newCar.price12hr),
-        price24hr: Number(newCar.price24hr),
-        priceHourly: Number(newCar.priceHourly),
-        promoActive: newCar.promoActive,
-        promoDiscount: Number(newCar.promoDiscount),
-        images: [imgUrl, imgUrl, imgUrl],
+        id: carSource.id || carSource.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        name: carSource.name,
+        tier: carSource.tier,
+        tierLabel: carSource.tierLabel,
+        basePrice: Number(carSource.priceHourly),
+        standardPrice: Number(carSource.price12hr),
+        priceAirport: Number(carSource.priceAirport),
+        price12hr: Number(carSource.price12hr),
+        price24hr: Number(carSource.price24hr),
+        priceHourly: Number(carSource.priceHourly),
+        promoActive: carSource.promoActive,
+        promoDiscount: Number(carSource.promoDiscount),
+        images: carSource.images?.length ? carSource.images : [imgUrl, imgUrl, imgUrl],
         videoUrl: vidUrl,
         specs: {
-          passengers: Number(newCar.passengers),
-          luggage: Number(newCar.luggage),
-          wifi: newCar.wifi,
-          refreshments: newCar.refreshments,
-          privacy: newCar.privacy,
-          color: newCar.color || 'Midnight Obsidian Black',
-          licensePlate: newCar.licensePlate || 'Pending Registry'
+          passengers: Number(carSource.passengers || 4),
+          luggage: Number(carSource.luggage || 3),
+          wifi: carSource.wifi || '5G Dedicated Hotspot',
+          refreshments: carSource.refreshments || 'Dom Pérignon Chilled + Gold Standard Water',
+          privacy: carSource.privacy || 'Level 4 Max',
+          color: carSource.color || 'Midnight Obsidian Black',
+          licensePlate: carSource.licensePlate || 'Pending Registry'
         },
-        isNew: true
+        isActive: carSource.isActive !== false
       };
 
       await db.addVehicle(carData);
       refreshData();
       if (onFleetUpdate) onFleetUpdate();
 
-    // Reset Form
-    setNewCar({
-      id: '',
-      name: '',
-      tier: 'presidential',
-      tierLabel: 'Presidential Limousine',
-      priceAirport: '',
-      price12hr: '',
-      price24hr: '',
-      priceHourly: '',
-      promoActive: false,
-      promoDiscount: 0,
-      image1: '',
-      image2: '',
-      image3: '',
-      videoUrl: '',
-      wifi: '5G Dedicated Hotspot',
-      refreshments: 'Dom Pérignon Chilled + Gold Standard Water',
-      privacy: 'Level 4 Max',
-      passengers: 4,
-      luggage: 3,
-      color: 'Midnight Obsidian Black',
-      licensePlate: 'Pending Registry',
-      image1File: null,
-      videoUrlFile: null
-    });
-    alert('Vehicle added to fleet catalog.');
+      if (editingCar) {
+        alert(`Vehicle "${carSource.name}" updated successfully!`);
+        setEditingCar(null);
+      } else {
+        alert('Vehicle added to fleet catalog.');
+      }
+
+      // Reset Form
+      setNewCar({
+        id: '',
+        name: '',
+        tier: 'presidential',
+        tierLabel: 'Presidential Limousine',
+        priceAirport: '',
+        price12hr: '',
+        price24hr: '',
+        priceHourly: '',
+        promoActive: false,
+        promoDiscount: 0,
+        image1: '',
+        image2: '',
+        image3: '',
+        videoUrl: '',
+        wifi: '5G Dedicated Hotspot',
+        refreshments: 'Dom Pérignon Chilled + Gold Standard Water',
+        privacy: 'Level 4 Max',
+        passengers: 4,
+        luggage: 3,
+        color: 'Midnight Obsidian Black',
+        licensePlate: 'Pending Registry',
+        image1File: null,
+        videoUrlFile: null
+      });
     } catch (err) {
       console.error(err);
-      alert('Failed to register vehicle or upload media.');
+      alert('Failed to save vehicle or upload media.');
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleEditVehicleClick = (car) => {
+    setEditingCar({
+      id: car.id,
+      name: car.name,
+      tier: car.tier || 'presidential',
+      tierLabel: car.tierLabel || 'Presidential Limousine',
+      priceAirport: car.priceAirport || car.basePrice || '',
+      price12hr: car.price12hr || car.standardPrice || '',
+      price24hr: car.price24hr || '',
+      priceHourly: car.priceHourly || car.basePrice || '',
+      promoActive: car.promoActive || false,
+      promoDiscount: car.promoDiscount || 0,
+      images: car.images || [],
+      videoUrl: car.videoUrl || '',
+      wifi: car.specs?.wifi || '5G Dedicated Hotspot',
+      refreshments: car.specs?.refreshments || 'Dom Pérignon Chilled + Gold Standard Water',
+      privacy: car.specs?.privacy || 'Level 4 Max',
+      passengers: car.specs?.passengers || 4,
+      luggage: car.specs?.luggage || 3,
+      color: car.specs?.color || 'Midnight Obsidian Black',
+      licensePlate: car.licensePlate || 'Pending Registry',
+      isActive: car.isActive !== false
+    });
+    window.scrollTo({ top: 300, behavior: 'smooth' });
   };
 
   const handleDeleteVehicle = async (id) => {
@@ -317,46 +389,119 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
     }
   };
 
-  // Article operations
-  const handleAddArticle = async (e) => {
+  // Fleet Updates / New Deliveries operations
+  const handleSaveFleetUpdate = async (e) => {
     e.preventDefault();
-    if (!newArticle.title || !newArticle.content) {
+    const updateTarget = editingFleetUpdate || newFleetUpdate;
+    if (!updateTarget.name || !updateTarget.desc) {
+      alert('Please fill in Vehicle Model Name and Description.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      let imgUrl = updateTarget.image || 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=600';
+      if (updateTarget.imageFile) {
+        imgUrl = await db.uploadMedia(updateTarget.imageFile) || imgUrl;
+      }
+
+      if (editingFleetUpdate) {
+        await db.updateFleetUpdate(editingFleetUpdate.id, {
+          name: updateTarget.name,
+          tierLabel: updateTarget.tierLabel,
+          tag: updateTarget.tag,
+          desc: updateTarget.desc,
+          image: imgUrl
+        });
+        alert('Fleet update entry updated successfully!');
+        setEditingFleetUpdate(null);
+      } else {
+        await db.addFleetUpdate({
+          name: updateTarget.name,
+          tierLabel: updateTarget.tierLabel,
+          tag: updateTarget.tag,
+          desc: updateTarget.desc,
+          image: imgUrl
+        });
+        alert('New delivery published to Fleet Updates!');
+      }
+
+      setNewFleetUpdate({
+        id: '',
+        name: '',
+        tierLabel: 'Presidential Limousine',
+        tag: 'JUST ADDED',
+        desc: '',
+        image: '',
+        imageFile: null
+      });
+
+      refreshData();
+      if (onFleetUpdate) onFleetUpdate();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save fleet update: ' + (err.message || err));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteFleetUpdate = async (id) => {
+    if (window.confirm('Delete this delivery entry from Fleet Updates?')) {
+      await db.deleteFleetUpdate(id);
+      refreshData();
+      if (onFleetUpdate) onFleetUpdate();
+    }
+  };
+
+  // Article operations (Publish & Edit)
+  const handleSaveArticle = async (e) => {
+    e.preventDefault();
+    const artTarget = editingArticle || newArticle;
+    if (!artTarget.title || !artTarget.content) {
       alert('Please fill in Article Title and Content.');
       return;
     }
 
     setIsUploading(true);
     try {
-      let imgUrl = newArticle.image || 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=400';
-      if (newArticle.imageFile) {
-        imgUrl = await db.uploadMedia(newArticle.imageFile) || imgUrl;
+      let imgUrl = artTarget.image || 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=400';
+      if (artTarget.imageFile) {
+        imgUrl = await db.uploadMedia(artTarget.imageFile) || imgUrl;
       }
 
       await db.addArticle({
-        title: newArticle.title,
-        category: newArticle.category,
-        readTime: newArticle.readTime,
-        summary: newArticle.summary || newArticle.content.substring(0, 120) + '...',
+        id: artTarget.id,
+        title: artTarget.title,
+        category: artTarget.category,
+        readTime: artTarget.readTime,
+        summary: artTarget.summary || artTarget.content.substring(0, 120) + '...',
         image: imgUrl,
-        content: newArticle.content
+        content: artTarget.content
       });
 
       refreshData();
       if (onNewsUpdate) onNewsUpdate();
 
-    setNewArticle({
-      title: '',
-      category: 'Vehicle Review',
-      readTime: '5 min read',
-      summary: '',
-      image: '',
-      imageFile: null,
-      content: ''
-    });
-    alert('Editorial article published to News Hub.');
+      if (editingArticle) {
+        alert('Article updated successfully.');
+        setEditingArticle(null);
+      } else {
+        alert('Editorial article published to News Hub.');
+      }
+
+      setNewArticle({
+        title: '',
+        category: 'Vehicle Review',
+        readTime: '5 min read',
+        summary: '',
+        image: '',
+        imageFile: null,
+        content: ''
+      });
     } catch(err) {
       console.error(err);
-      alert('Failed to publish article.');
+      alert('Failed to publish article: ' + (err.message || err));
     } finally {
       setIsUploading(false);
     }
@@ -448,6 +593,17 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
           <p className="auth-subtitle">Restricted Access. Enter operator key.</p>
           <form onSubmit={handleAdminLogin} className="login-form">
             <div className="input-group">
+              <label>Operator Email</label>
+              <input
+                type="email"
+                placeholder="admin@reachchauffeur.com"
+                className="glass-input"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="input-group" style={{ marginTop: '15px' }}>
               <label>Operator Passkey</label>
               <input
                 type="password"
@@ -458,12 +614,11 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                 required
               />
             </div>
-            {loginError && <p className="login-error-text" style={{ color: 'red' }}>⚠️ {loginError}</p>}
-            <button type="submit" className="btn-champagne login-btn">
+            {loginError && <p className="login-error-text" style={{ color: 'red', marginTop: '10px' }}>⚠️ {loginError}</p>}
+            <button type="submit" className="btn-champagne login-btn" style={{ marginTop: '20px' }}>
               Authenticate
             </button>
           </form>
-          <p style={{ marginTop: '15px', fontSize: '0.8rem', color: '#888', textAlign: 'center' }}>Demo passkey: reach2026</p>
         </div>
       </div>
     );
@@ -472,7 +627,16 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
   return (
     <div className="admin-page-wrapper section-container">
       <div className="section-header animate-slide-up">
-        <span className="gold-badge">Administration Center</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <span className="gold-badge">Administration Center</span>
+          <button 
+            onClick={handleLogout} 
+            className="btn-glass btn-small"
+            style={{ color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)', cursor: 'pointer' }}
+          >
+            🔒 Log Out
+          </button>
+        </div>
         <h2>Reach Operator Desk</h2>
         <p className="section-subtitle">
           Manage live vehicle dispatches, edit fleet details, publish articles, and verify corporate accounts.
@@ -493,6 +657,12 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
             className={`admin-tab-btn ${activeTab === 'fleet' ? 'active' : ''}`}
           >
             🚗 Fleet Matrix Manager
+          </button>
+          <button 
+            onClick={() => setActiveTab('fleet-updates')}
+            className={`admin-tab-btn ${activeTab === 'fleet-updates' ? 'active' : ''}`}
+          >
+            🚚 Fleet Updates & Deliveries ({fleetUpdates.length})
           </button>
           <button 
             onClick={() => setActiveTab('news')}
@@ -524,6 +694,12 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
             style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}
           >
             💾 Database Sync
+          </button>
+          <button 
+            onClick={() => setActiveTab('security')}
+            className={`admin-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
+          >
+            🔐 Security Settings
           </button>
           <button 
             onClick={() => setActiveTab('payment')}
@@ -567,7 +743,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
 
                       <div className="booking-card-mid">
                         <div className="b-detail-col">
-                          <strong>Passenger:</strong> {booking.personal.name} • {booking.personal.phone}
+                          <strong>Passenger:</strong> {booking.personal.name} • {booking.personal.phone} • {booking.personal.email}
                         </div>
                         <div className="b-detail-col">
                           <strong>Route Pickup:</strong> {booking.logistics.pickup}
@@ -715,10 +891,22 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                                 <div style={{ display: 'flex', gap: '10px' }}>
                                   <button 
                                     className="btn-champagne btn-small"
-                                    onClick={() => {
+                                    onClick={async () => {
                                       if(!selectedDriverId) return alert('Select a driver to dispatch');
                                       if(!selectedVehicleId) return alert('Select a vehicle to dispatch');
                                       
+                                      const assignedDriver = drivers.find(d => d.id === selectedDriverId);
+                                      if (assignedDriver) {
+                                        await db.updateDriverStatus(selectedDriverId, 'On Route');
+                                        await triggerChauffeurDispatchedAlert(
+                                          booking.personal?.email, 
+                                          booking.bookingRef, 
+                                          assignedDriver.name, 
+                                          booking.vehicle
+                                        );
+                                      }
+                                      
+                                      alert('Chauffeur officially dispatched!');
                                       const vehicle = vehicles.find(v => v.id === selectedVehicleId);
                                       
                                       // Recalculate endTime starting from actual dispatch moment
@@ -919,12 +1107,12 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
             <div className="admin-tab-pane animate-fade-in">
               <div className="pane-header">
                 <h3>Fleet Catalog Manager</h3>
-                <p>Register new luxury sedans/SUVs, adjust booking rates, or remove decommissioned vehicles.</p>
+                <p>Register new luxury sedans/SUVs, update amenities, adjust booking rates, or edit fleet specs.</p>
               </div>
 
-              {/* Add Vehicle Form */}
-              <form onSubmit={handleAddVehicle} className="admin-form glass-panel">
-                <h4>Add New Vehicle to Catalog</h4>
+              {/* Add / Edit Vehicle Form */}
+              <form onSubmit={handleSaveVehicle} className="admin-form glass-panel">
+                <h4>{editingCar ? `Edit Vehicle: ${editingCar.name}` : 'Add New Vehicle to Catalog'}</h4>
                 
                 <div className="form-row">
                   <div className="input-group">
@@ -933,8 +1121,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="text" 
                       placeholder="e.g. 2026 Mercedes-Maybach S-Class"
                       className="glass-input"
-                      value={newCar.name}
-                      onChange={(e) => setNewCar({ ...newCar, name: e.target.value })}
+                      value={editingCar ? editingCar.name : newCar.name}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, name: e.target.value }) : setNewCar({ ...newCar, name: e.target.value })}
                       required
                     />
                   </div>
@@ -942,12 +1130,16 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     <label>Tier Segment</label>
                     <select 
                       className="glass-input select-dark"
-                      value={newCar.tier}
+                      value={editingCar ? editingCar.tier : newCar.tier}
                       onChange={(e) => {
                         let label = 'Executive Sedan';
                         if (e.target.value === 'presidential') label = 'Presidential Limousine';
                         if (e.target.value === 'suv') label = 'Luxury SUV';
-                        setNewCar({ ...newCar, tier: e.target.value, tierLabel: label });
+                        if (editingCar) {
+                          setEditingCar({ ...editingCar, tier: e.target.value, tierLabel: label });
+                        } else {
+                          setNewCar({ ...newCar, tier: e.target.value, tierLabel: label });
+                        }
                       }}
                     >
                       <option value="sedan">Executive Sedan</option>
@@ -964,8 +1156,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="number" 
                       placeholder="150000"
                       className="glass-input"
-                      value={newCar.priceAirport}
-                      onChange={(e) => setNewCar({ ...newCar, priceAirport: e.target.value })}
+                      value={editingCar ? editingCar.priceAirport : newCar.priceAirport}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, priceAirport: e.target.value }) : setNewCar({ ...newCar, priceAirport: e.target.value })}
                       required
                     />
                   </div>
@@ -975,8 +1167,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="number" 
                       placeholder="350000"
                       className="glass-input"
-                      value={newCar.price12hr}
-                      onChange={(e) => setNewCar({ ...newCar, price12hr: e.target.value })}
+                      value={editingCar ? editingCar.price12hr : newCar.price12hr}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, price12hr: e.target.value }) : setNewCar({ ...newCar, price12hr: e.target.value })}
                       required
                     />
                   </div>
@@ -989,8 +1181,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="number" 
                       placeholder="550000"
                       className="glass-input"
-                      value={newCar.price24hr}
-                      onChange={(e) => setNewCar({ ...newCar, price24hr: e.target.value })}
+                      value={editingCar ? editingCar.price24hr : newCar.price24hr}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, price24hr: e.target.value }) : setNewCar({ ...newCar, price24hr: e.target.value })}
                       required
                     />
                   </div>
@@ -1000,8 +1192,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="number" 
                       placeholder="60000"
                       className="glass-input"
-                      value={newCar.priceHourly}
-                      onChange={(e) => setNewCar({ ...newCar, priceHourly: e.target.value })}
+                      value={editingCar ? editingCar.priceHourly : newCar.priceHourly}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, priceHourly: e.target.value }) : setNewCar({ ...newCar, priceHourly: e.target.value })}
                       required
                     />
                   </div>
@@ -1013,8 +1205,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginTop: '10px' }}>
                       <input 
                         type="checkbox" 
-                        checked={newCar.promoActive}
-                        onChange={(e) => setNewCar({ ...newCar, promoActive: e.target.checked })}
+                        checked={editingCar ? editingCar.promoActive : newCar.promoActive}
+                        onChange={(e) => editingCar ? setEditingCar({ ...editingCar, promoActive: e.target.checked }) : setNewCar({ ...newCar, promoActive: e.target.checked })}
                         style={{ width: '20px', height: '20px' }}
                       />
                       <span>Active Promo</span>
@@ -1026,9 +1218,9 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="number" 
                       placeholder="e.g., 10"
                       className="glass-input"
-                      value={newCar.promoDiscount}
-                      onChange={(e) => setNewCar({ ...newCar, promoDiscount: e.target.value })}
-                      disabled={!newCar.promoActive}
+                      value={editingCar ? editingCar.promoDiscount : newCar.promoDiscount}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, promoDiscount: e.target.value }) : setNewCar({ ...newCar, promoDiscount: e.target.value })}
+                      disabled={editingCar ? !editingCar.promoActive : !newCar.promoActive}
                     />
                   </div>
                 </div>
@@ -1040,7 +1232,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="file" 
                       accept="image/*"
                       className="glass-input"
-                      onChange={(e) => setNewCar({ ...newCar, image1File: e.target.files[0] })}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, image1File: e.target.files[0] }) : setNewCar({ ...newCar, image1File: e.target.files[0] })}
                     />
                   </div>
                   <div className="input-group">
@@ -1049,7 +1241,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="file" 
                       accept="video/mp4,video/x-m4v,video/*"
                       className="glass-input"
-                      onChange={(e) => setNewCar({ ...newCar, videoUrlFile: e.target.files[0] })}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, videoUrlFile: e.target.files[0] }) : setNewCar({ ...newCar, videoUrlFile: e.target.files[0] })}
                     />
                   </div>
                 </div>
@@ -1060,8 +1252,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     <input 
                       type="number" 
                       className="glass-input"
-                      value={newCar.passengers}
-                      onChange={(e) => setNewCar({ ...newCar, passengers: e.target.value })}
+                      value={editingCar ? editingCar.passengers : newCar.passengers}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, passengers: e.target.value }) : setNewCar({ ...newCar, passengers: e.target.value })}
                     />
                   </div>
                   <div className="input-group input-third">
@@ -1069,8 +1261,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     <input 
                       type="number" 
                       className="glass-input"
-                      value={newCar.luggage}
-                      onChange={(e) => setNewCar({ ...newCar, luggage: e.target.value })}
+                      value={editingCar ? editingCar.luggage : newCar.luggage}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, luggage: e.target.value }) : setNewCar({ ...newCar, luggage: e.target.value })}
                     />
                   </div>
                   <div className="input-group input-third">
@@ -1079,8 +1271,33 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="text" 
                       placeholder="e.g. Level 4 Max"
                       className="glass-input"
-                      value={newCar.privacy}
-                      onChange={(e) => setNewCar({ ...newCar, privacy: e.target.value })}
+                      value={editingCar ? editingCar.privacy : newCar.privacy}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, privacy: e.target.value }) : setNewCar({ ...newCar, privacy: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* AMENITIES SECTION */}
+                <div className="form-row">
+                  <div className="input-group">
+                    <label>✨ Vehicle Amenities & Refreshments (Displayed to Users)</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Dom Pérignon Chilled + Gold Standard Water, Executive Espresso"
+                      className="glass-input"
+                      value={editingCar ? editingCar.refreshments : newCar.refreshments}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, refreshments: e.target.value }) : setNewCar({ ...newCar, refreshments: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>📡 Wi-Fi & Connectivity Specs</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 5G Dedicated Hotspot"
+                      className="glass-input"
+                      value={editingCar ? editingCar.wifi : newCar.wifi}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, wifi: e.target.value }) : setNewCar({ ...newCar, wifi: e.target.value })}
                     />
                   </div>
                 </div>
@@ -1092,8 +1309,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="text" 
                       placeholder="e.g. Midnight Obsidian Black"
                       className="glass-input"
-                      value={newCar.color}
-                      onChange={(e) => setNewCar({ ...newCar, color: e.target.value })}
+                      value={editingCar ? editingCar.color : newCar.color}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, color: e.target.value }) : setNewCar({ ...newCar, color: e.target.value })}
                       required
                     />
                   </div>
@@ -1103,16 +1320,23 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="text" 
                       placeholder="e.g. LA-99A-02"
                       className="glass-input"
-                      value={newCar.licensePlate}
-                      onChange={(e) => setNewCar({ ...newCar, licensePlate: e.target.value })}
+                      value={editingCar ? editingCar.licensePlate : newCar.licensePlate}
+                      onChange={(e) => editingCar ? setEditingCar({ ...editingCar, licensePlate: e.target.value }) : setNewCar({ ...newCar, licensePlate: e.target.value })}
                       required
                     />
                   </div>
                 </div>
 
-                <button type="submit" className="btn-champagne" disabled={isUploading}>
-                  {isUploading ? 'Uploading Media & Registering...' : 'Register Vehicle to Matrix'}
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" className="btn-champagne" disabled={isUploading}>
+                    {isUploading ? 'Uploading Media & Saving...' : (editingCar ? 'Update Vehicle Catalog Specs' : 'Register Vehicle to Matrix')}
+                  </button>
+                  {editingCar && (
+                    <button type="button" className="btn-glass" onClick={() => setEditingCar(null)}>
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
               </form>
 
               {/* Current Vehicles list */}
@@ -1125,13 +1349,17 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     
                     return (
                       <div key={car.id} className="catalog-car-card glass-panel" style={{ display: 'flex', flexDirection: 'column', opacity: car.isActive ? 1 : 0.6 }}>
-                        <img src={car.images[0]} alt={car.name} style={{ height: '180px', objectFit: 'cover' }} />
+                        <img src={car.images[0]} alt={car.name} style={{ height: '180px', objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=600'; }} />
                         <div className="car-card-body" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                           <h5>{car.name}</h5>
                           <span style={{ fontSize: '0.9rem', color: 'var(--color-champagne)', fontWeight: 'bold' }}>{car.licensePlate || 'Pending Registry'}</span>
                           <p style={{ marginTop: '5px' }}>{car.tierLabel}</p>
-                          <span className="price-tag" style={{ marginBottom: '15px' }}>₦{car.basePrice.toLocaleString()} / hr</span>
+                          <span className="price-tag" style={{ marginBottom: '10px' }}>₦{car.basePrice.toLocaleString()} / hr</span>
                           
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-silver)', marginBottom: '10px' }}>
+                            <strong>Amenities:</strong> {car.specs?.refreshments || 'Dom Pérignon Chilled + Gold Standard Water'}
+                          </div>
+
                           <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '15px', fontSize: '0.85rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                               <span style={{ color: '#aaa' }}>Completed Trips:</span>
@@ -1143,7 +1371,14 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', gap: '10px', marginTop: 'auto' }}>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: 'auto', flexWrap: 'wrap' }}>
+                            <button 
+                              className="btn-glass btn-small"
+                              style={{ flex: 1 }}
+                              onClick={() => handleEditVehicleClick(car)}
+                            >
+                              ✏️ Edit
+                            </button>
                             <button 
                               className={`btn-small ${car.isActive ? 'btn-glass' : 'btn-champagne'}`}
                               style={{ flex: 1 }}
@@ -1151,7 +1386,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                                 db.toggleVehicleStatus(car.id, !car.isActive).then(refreshData);
                               }}
                             >
-                              {car.isActive ? 'Mark Inactive' : 'Mark Active'}
+                              {car.isActive ? 'Inactive' : 'Active'}
                             </button>
                             <button 
                               className="btn-glass btn-small delete-btn"
@@ -1170,16 +1405,136 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
             </div>
           )}
 
+          {/* FLEET UPDATES / NEW DELIVERIES */}
+          {activeTab === 'fleet-updates' && (
+            <div className="admin-tab-pane animate-fade-in">
+              <div className="pane-header">
+                <h3>Fleet Updates & New Deliveries</h3>
+                <p>Publish, update, and manage newly arrived garage vehicles displayed on the public fleet page.</p>
+              </div>
+
+              <form onSubmit={handleSaveFleetUpdate} className="admin-form glass-panel">
+                <h4>{editingFleetUpdate ? `Edit Delivery Entry: ${editingFleetUpdate.name}` : 'Publish New Garage Delivery'}</h4>
+
+                <div className="form-row">
+                  <div className="input-group">
+                    <label>Vehicle Model / Name</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 2026 Rolls-Royce Spectre (All-Electric)"
+                      className="glass-input"
+                      value={editingFleetUpdate ? editingFleetUpdate.name : newFleetUpdate.name}
+                      onChange={(e) => editingFleetUpdate ? setEditingFleetUpdate({ ...editingFleetUpdate, name: e.target.value }) : setNewFleetUpdate({ ...newFleetUpdate, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Badge Tag / Segment</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. JUST ADDED"
+                      className="glass-input"
+                      value={editingFleetUpdate ? editingFleetUpdate.tag : newFleetUpdate.tag}
+                      onChange={(e) => editingFleetUpdate ? setEditingFleetUpdate({ ...editingFleetUpdate, tag: e.target.value }) : setNewFleetUpdate({ ...newFleetUpdate, tag: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="input-group">
+                    <label>Cover Photo File (JPG/PNG)</label>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      className="glass-input"
+                      onChange={(e) => editingFleetUpdate ? setEditingFleetUpdate({ ...editingFleetUpdate, imageFile: e.target.files[0] }) : setNewFleetUpdate({ ...newFleetUpdate, imageFile: e.target.files[0] })}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>Cover Photo URL (Fallback)</label>
+                    <input 
+                      type="text" 
+                      placeholder="https://..."
+                      className="glass-input"
+                      value={editingFleetUpdate ? editingFleetUpdate.image : newFleetUpdate.image}
+                      onChange={(e) => editingFleetUpdate ? setEditingFleetUpdate({ ...editingFleetUpdate, image: e.target.value }) : setNewFleetUpdate({ ...newFleetUpdate, image: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label>Delivery Description</label>
+                  <textarea 
+                    rows="3"
+                    placeholder="Provide details of the new vehicle expansion recently added to the Lagos garage..."
+                    className="glass-input textarea-dark"
+                    value={editingFleetUpdate ? editingFleetUpdate.desc : newFleetUpdate.desc}
+                    onChange={(e) => editingFleetUpdate ? setEditingFleetUpdate({ ...editingFleetUpdate, desc: e.target.value }) : setNewFleetUpdate({ ...newFleetUpdate, desc: e.target.value })}
+                    required
+                  ></textarea>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" className="btn-champagne" disabled={isUploading}>
+                    {isUploading ? 'Publishing Delivery...' : (editingFleetUpdate ? 'Update Delivery Entry' : 'Publish to Fleet Updates')}
+                  </button>
+                  {editingFleetUpdate && (
+                    <button type="button" className="btn-glass" onClick={() => setEditingFleetUpdate(null)}>
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
+              </form>
+
+              {/* Published Fleet Updates List */}
+              <div className="current-items-list" style={{ marginTop: '30px' }}>
+                <h4>Active Garage Deliveries ({fleetUpdates.length})</h4>
+                <div className="catalog-grid">
+                  {fleetUpdates.map((item) => (
+                    <div key={item.id} className="catalog-car-card glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+                      {item.image && <img src={item.image} alt={item.name} style={{ height: '160px', objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=300'; }} />}
+                      <div className="car-card-body" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--color-champagne)', fontWeight: 'bold' }}>{item.tag || 'JUST ADDED'}</span>
+                        <h5 style={{ margin: '6px 0' }}>{item.name}</h5>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--color-silver)', flexGrow: 1 }}>{item.desc}</p>
+                        
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                          <button 
+                            className="btn-glass btn-small"
+                            style={{ flex: 1 }}
+                            onClick={() => {
+                              setEditingFleetUpdate(item);
+                              window.scrollTo({ top: 300, behavior: 'smooth' });
+                            }}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button 
+                            className="btn-glass btn-small delete-btn"
+                            style={{ flex: 1 }}
+                            onClick={() => handleDeleteFleetUpdate(item.id)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* NEWS HUB CURATION */}
           {activeTab === 'news' && (
             <div className="admin-tab-pane animate-fade-in">
               <div className="pane-header">
                 <h3>News Hub Publisher</h3>
-                <p>Publish luxury reviews, travel digests, and concierge columns to the public editorial space.</p>
+                <p>Publish and edit luxury reviews, travel digests, and concierge columns in the public editorial space.</p>
               </div>
 
-              <form onSubmit={handleAddArticle} className="admin-form glass-panel">
-                <h4>Publish New Editorial Article</h4>
+              <form onSubmit={handleSaveArticle} className="admin-form glass-panel">
+                <h4>{editingArticle ? `Edit Editorial: ${editingArticle.title}` : 'Publish New Editorial Article'}</h4>
 
                 <div className="form-row">
                   <div className="input-group">
@@ -1188,8 +1543,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="text" 
                       placeholder="e.g. The Silent Cabin: Under the Hood of the Mercedes-Maybach"
                       className="glass-input"
-                      value={newArticle.title}
-                      onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
+                      value={editingArticle ? editingArticle.title : newArticle.title}
+                      onChange={(e) => editingArticle ? setEditingArticle({ ...editingArticle, title: e.target.value }) : setNewArticle({ ...newArticle, title: e.target.value })}
                       required
                     />
                   </div>
@@ -1197,8 +1552,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     <label>Editorial Category</label>
                     <select 
                       className="glass-input select-dark"
-                      value={newArticle.category}
-                      onChange={(e) => setNewArticle({ ...newArticle, category: e.target.value })}
+                      value={editingArticle ? editingArticle.category : newArticle.category}
+                      onChange={(e) => editingArticle ? setEditingArticle({ ...editingArticle, category: e.target.value }) : setNewArticle({ ...newArticle, category: e.target.value })}
                     >
                       <option value="Vehicle Review">Vehicle Review</option>
                       <option value="Luxury Travel">Luxury Travel</option>
@@ -1215,7 +1570,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="file" 
                       accept="image/*"
                       className="glass-input"
-                      onChange={(e) => setNewArticle({ ...newArticle, imageFile: e.target.files[0] })}
+                      onChange={(e) => editingArticle ? setEditingArticle({ ...editingArticle, imageFile: e.target.files[0] }) : setNewArticle({ ...newArticle, imageFile: e.target.files[0] })}
                     />
                   </div>
                   <div className="input-group">
@@ -1224,8 +1579,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                       type="text" 
                       placeholder="5 min read"
                       className="glass-input"
-                      value={newArticle.readTime}
-                      onChange={(e) => setNewArticle({ ...newArticle, readTime: e.target.value })}
+                      value={editingArticle ? editingArticle.readTime : newArticle.readTime}
+                      onChange={(e) => editingArticle ? setEditingArticle({ ...editingArticle, readTime: e.target.value }) : setNewArticle({ ...newArticle, readTime: e.target.value })}
                     />
                   </div>
                 </div>
@@ -1236,8 +1591,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     type="text" 
                     placeholder="Provide a 1-2 sentence preview hook..."
                     className="glass-input"
-                    value={newArticle.summary}
-                    onChange={(e) => setNewArticle({ ...newArticle, summary: e.target.value })}
+                    value={editingArticle ? editingArticle.summary : newArticle.summary}
+                    onChange={(e) => editingArticle ? setEditingArticle({ ...editingArticle, summary: e.target.value }) : setNewArticle({ ...newArticle, summary: e.target.value })}
                   />
                 </div>
 
@@ -1247,33 +1602,51 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     rows="8"
                     placeholder="Write details of the post here. Double space paragraph shifts..."
                     className="glass-input textarea-dark"
-                    value={newArticle.content}
-                    onChange={(e) => setNewArticle({ ...newArticle, content: e.target.value })}
+                    value={editingArticle ? editingArticle.content : newArticle.content}
+                    onChange={(e) => editingArticle ? setEditingArticle({ ...editingArticle, content: e.target.value }) : setNewArticle({ ...newArticle, content: e.target.value })}
                     required
                   ></textarea>
                 </div>
 
-                <button type="submit" className="btn-champagne" disabled={isUploading}>
-                  {isUploading ? 'Uploading & Publishing...' : 'Publish to News Hub'}
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" className="btn-champagne" disabled={isUploading}>
+                    {isUploading ? 'Uploading & Saving...' : (editingArticle ? 'Update Published Article' : 'Publish to News Hub')}
+                  </button>
+                  {editingArticle && (
+                    <button type="button" className="btn-glass" onClick={() => setEditingArticle(null)}>
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
               </form>
 
               {/* Current Articles list */}
               <div className="current-items-list">
-                <h4>Published Articles</h4>
+                <h4>Published Articles ({articles.length})</h4>
                 <div className="articles-admin-list">
                   {articles.map((art) => (
-                    <div key={art.id} className="article-admin-card glass-panel">
+                    <div key={art.id} className="article-admin-card glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <h5>{art.title}</h5>
-                        <span>{art.category} • {art.date}</span>
+                        <span>{art.category} • {art.date} • {art.readTime}</span>
                       </div>
-                      <button 
-                        className="btn-glass btn-small delete-btn"
-                        onClick={() => handleDeleteArticle(art.id)}
-                      >
-                        Delete
-                      </button>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          className="btn-glass btn-small"
+                          onClick={() => {
+                            setEditingArticle(art);
+                            window.scrollTo({ top: 300, behavior: 'smooth' });
+                          }}
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button 
+                          className="btn-glass btn-small delete-btn"
+                          onClick={() => handleDeleteArticle(art.id)}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1694,6 +2067,54 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
               <button className="btn-champagne" onClick={refreshData}>
                 Sync Now
               </button>
+            </div>
+          )}
+
+          {/* SECURITY SETTINGS */}
+          {activeTab === 'security' && (
+            <div className="admin-tab-pane animate-fade-in">
+              <div className="pane-header">
+                <h3>Command Center Security</h3>
+                <p>Update the operator credentials required to access this dashboard.</p>
+              </div>
+              <div className="admin-form glass-panel" style={{ maxWidth: '500px' }}>
+                <div className="input-group full-width">
+                  <label>New Operator Email</label>
+                  <input
+                    type="email"
+                    id="newAdminEmail"
+                    className="glass-input"
+                    placeholder="admin@reachchauffeur.com"
+                  />
+                </div>
+                <div className="input-group full-width" style={{ marginTop: '20px' }}>
+                  <label>New Operator Passkey</label>
+                  <input
+                    type="password"
+                    id="newAdminPassword"
+                    className="glass-input"
+                    placeholder="Enter new password"
+                  />
+                </div>
+                <button 
+                  className="btn-champagne" 
+                  style={{ marginTop: '25px', width: '100%' }}
+                  onClick={async () => {
+                    const email = document.getElementById('newAdminEmail').value;
+                    const pass = document.getElementById('newAdminPassword').value;
+                    if (!email || !pass) return alert('Both email and password are required.');
+                    const success = await db.updateAdminAuth({ email, password: pass });
+                    if (success) {
+                      alert('Command Center credentials updated! You must log in again with your new credentials.');
+                      window.location.reload();
+                    } else {
+                      alert('Failed to update credentials.');
+                    }
+                  }}
+                >
+                  Update Credentials
+                </button>
+              </div>
             </div>
           )}
 
