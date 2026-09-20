@@ -25,8 +25,8 @@ export default function Home({ onQuickBook, vehicles = [] }) {
     { name: 'First-Class Sprinter', desc: 'The ultimate mobile boardroom. Tailored for corporate roadshows and executive entourages.', img: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?q=80&w=2069&auto=format&fit=crop' }
   ];
 
-  // Prioritize vehicles with verified database garage photos for hero showcase
-  const primaryGarageCar = vehicles.find(v => (v.images?.[0] || v.image1 || '').includes('supabase.co')) || vehicles[0];
+  // Use the primary active vehicle from the database garage for hero showcase
+  const primaryGarageCar = vehicles[0];
   const heroBgImage = primaryGarageCar?.images?.[0] || primaryGarageCar?.image1 || defaultFleet[0].img;
 
   // Use the vehicles from DB if available, otherwise fall back to default
