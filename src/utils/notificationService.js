@@ -87,7 +87,7 @@ export const sendEmailNotification = async (toEmail, subject, htmlMessage) => {
  */
 
 export const triggerNewBookingAlert = async (bookingRecord) => {
-  const telegramMsg = `🚨 <b>NEW BOOKING REQUEST</b> 🚨\n\n<b>Ref:</b> ${bookingRecord.bookingRef}\n<b>Passenger:</b> ${bookingRecord.personal?.name}\n<b>Phone:</b> ${bookingRecord.personal?.phone}\n<b>Email:</b> ${bookingRecord.personal?.email}\n<b>Vehicle:</b> ${bookingRecord.vehicle}\n<b>Pickup:</b> ${bookingRecord.logistics?.pickup}\n<b>Date:</b> ${bookingRecord.logistics?.date}\n\n<i>Login to Admin Command Center to approve!</i>`;
+  const telegramMsg = `[DISPATCH ALERT] <b>NEW BOOKING REQUEST</b>\n\n<b>Ref:</b> ${bookingRecord.bookingRef}\n<b>Passenger:</b> ${bookingRecord.personal?.name}\n<b>Phone:</b> ${bookingRecord.personal?.phone}\n<b>Email:</b> ${bookingRecord.personal?.email}\n<b>Vehicle:</b> ${bookingRecord.vehicle}\n<b>Pickup:</b> ${bookingRecord.logistics?.pickup}\n<b>Date:</b> ${bookingRecord.logistics?.date}\n\n<i>Login to Admin Command Center to approve!</i>`;
   await notifyAdminTelegram(telegramMsg);
 
   // Email to Admin
@@ -99,7 +99,7 @@ export const triggerNewBookingAlert = async (bookingRecord) => {
 };
 
 export const triggerPaymentReceivedAlert = async (bookingRef, customerName) => {
-  const msg = `💰 <b>PAYMENT CONFIRMATION RECEIVED</b> 💰\n\n<b>Ref:</b> ${bookingRef}\n<b>Passenger:</b> ${customerName}\n\n<i>Passenger claims to have paid. Please verify in Admin Panel!</i>`;
+  const msg = `[PAYMENT] <b>PAYMENT CONFIRMATION RECEIVED</b>\n\n<b>Ref:</b> ${bookingRef}\n<b>Passenger:</b> ${customerName}\n\n<i>Passenger claims to have paid. Please verify in Admin Panel!</i>`;
   await notifyAdminTelegram(msg);
 };
 
@@ -114,7 +114,7 @@ export const triggerChauffeurDispatchedAlert = async (customerEmail, bookingRef,
 };
 
 export const triggerRideEndedAlert = async (bookingRef, customerEmail) => {
-  const adminMsg = `🏁 <b>RIDE COMPLETED</b> 🏁\n\n<b>Ref:</b> ${bookingRef} has successfully completed their trip.`;
+  const adminMsg = `[STATUS] <b>RIDE COMPLETED</b>\n\n<b>Ref:</b> ${bookingRef} has successfully completed their trip.`;
   await notifyAdminTelegram(adminMsg);
 
   if (customerEmail) {
@@ -124,6 +124,6 @@ export const triggerRideEndedAlert = async (bookingRef, customerEmail) => {
 };
 
 export const triggerExtensionRequestAlert = async (bookingRef, details) => {
-  const msg = `⏱️ <b>EXTENSION REQUESTED</b> ⏱️\n\n<b>Ref:</b> ${bookingRef}\n<b>Details:</b> ${details}\n\n<i>Passenger wishes to extend their booking duration.</i>`;
+  const msg = `[MODIFICATION] <b>EXTENSION REQUESTED</b>\n\n<b>Ref:</b> ${bookingRef}\n<b>Details:</b> ${details}\n\n<i>Passenger wishes to extend their booking duration.</i>`;
   await notifyAdminTelegram(msg);
 };

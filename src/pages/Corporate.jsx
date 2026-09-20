@@ -158,7 +158,9 @@ export default function Corporate({ onOpenBooking }) {
           {/* Header Dashboard Banner */}
           <div className="corp-header-banner glass-panel">
             <div className="corp-profile">
-              <span className="corp-avatar-badge">🏢</span>
+              <span className="corp-avatar-badge">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="15" y2="18"/></svg>
+              </span>
               <div>
                 <h3>{currentFirm.companyName}</h3>
                 <p>Enterprise Tier Partner • <strong>{currentFirm.discountRate}% Active Account Discount</strong></p>
@@ -178,9 +180,9 @@ export default function Corporate({ onOpenBooking }) {
 
           {currentFirm.discountRate > 0 && (
             <div className="discount-alert-banner" style={{ background: 'linear-gradient(90deg, rgba(212,175,55,0.15) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '12px', padding: '15px 20px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <span style={{ fontSize: '1.5rem' }}>🎁</span>
+              <span className="gold-badge">PREFERRED</span>
               <div style={{ textAlign: 'left' }}>
-                <strong style={{ color: 'var(--color-champagne)', fontSize: '0.95rem' }}>Preferred Partner Discount Offered!</strong>
+                <strong style={{ color: 'var(--color-champagne)', fontSize: '0.95rem' }}>Preferred Partner Discount Active</strong>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-silver)' }}>You have been granted a <strong>{currentFirm.discountRate}% discount</strong> on all rides booked through your corporate account. This discount will be automatically stacked at checkout.</p>
               </div>
             </div>
@@ -193,13 +195,13 @@ export default function Corporate({ onOpenBooking }) {
                 onClick={() => setActiveTab('history')}
                 className={`corp-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
               >
-                🚗 Ride History ({rides.length})
+                Ride History ({rides.length})
               </button>
               <button 
                 onClick={() => setActiveTab('invoices')}
                 className={`corp-tab-btn ${activeTab === 'invoices' ? 'active' : ''}`}
               >
-                💳 Invoices & Statement
+                Invoices & Statement
               </button>
               <button 
                 onClick={() => {
@@ -229,7 +231,7 @@ export default function Corporate({ onOpenBooking }) {
                       className="btn-champagne"
                       onClick={() => onOpenBooking()}
                     >
-                      ✨ Book Custom Ride
+                      Book Custom Ride
                     </button>
                   </div>
 
@@ -346,7 +348,9 @@ export default function Corporate({ onOpenBooking }) {
 
           {registeredId ? (
             <div className="auth-success-alert animate-fade-in">
-              <span className="success-badge-large">✓</span>
+              <span className="success-badge-large">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
               <h3>Corporate Account Registered</h3>
               <p className="success-desc">Your corporate account credentials have been processed successfully.</p>
               
@@ -371,7 +375,9 @@ export default function Corporate({ onOpenBooking }) {
           ) : !isSignUp ? (
             /* Sign In Form */
             <div className="auth-form-wrapper animate-fade-in">
-              <div className="login-icon">🔒</div>
+              <div className="login-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
               <h3>Enterprise Portal Access</h3>
               <p className="auth-subtitle">Provide verified corporate ID credentials to audit ride lists.</p>
               
@@ -400,7 +406,7 @@ export default function Corporate({ onOpenBooking }) {
                   />
                 </div>
 
-                {error && <p className="login-error-text">⚠️ {error}</p>}
+                {error && <p className="login-error-text">{error}</p>}
 
                 <button type="submit" className="btn-champagne login-btn">
                   Authenticate Account
@@ -414,7 +420,9 @@ export default function Corporate({ onOpenBooking }) {
           ) : (
             /* Sign Up Form */
             <div className="auth-form-wrapper animate-fade-in">
-              <div className="login-icon">💼</div>
+              <div className="login-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              </div>
               <h3>Request Corporate Access</h3>
               <p className="auth-subtitle">Establish a recurring billing account for your enterprise group.</p>
               
@@ -479,7 +487,7 @@ export default function Corporate({ onOpenBooking }) {
                   />
                 </div>
 
-                {error && <p className="login-error-text">⚠️ {error}</p>}
+                {error && <p className="login-error-text">{error}</p>}
 
                 <button type="submit" className="btn-champagne login-btn">
                   Create Corporate Account

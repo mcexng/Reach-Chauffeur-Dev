@@ -393,7 +393,9 @@ export default function Tracking({ activeBooking }) {
             <div className="chauffeur-card-details">
               <div className="chauffeur-avatar">
                 <span className="avatar-letter">{driverInfo ? driverInfo.name.charAt(0) : '?'}</span>
-                <div className="verified-badge">✓</div>
+                <div className="verified-badge">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
               </div>
 
               <div className="chauffeur-identity">
@@ -403,13 +405,22 @@ export default function Tracking({ activeBooking }) {
 
               <div className="verification-pills">
                 <div className="verif-pill">
-                  <span className="pill-icon">🛡</span> Background Checked (Vetted)
+                  <span className="pill-icon">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </span>
+                  Background Checked
                 </div>
                 <div className="verif-pill">
-                  <span className="pill-icon">✈</span> Aviation Access Approved
+                  <span className="pill-icon">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/></svg>
+                  </span>
+                  Aviation Cleared
                 </div>
                 <div className="verif-pill">
-                  <span className="pill-icon">★</span> {driverInfo ? driverInfo.rating : '4.99'} Rating
+                  <span className="pill-icon">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  </span>
+                  Rating: {driverInfo ? driverInfo.rating : '4.99'}
                 </div>
               </div>
 
@@ -427,18 +438,20 @@ export default function Tracking({ activeBooking }) {
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                   <button 
                     className="btn-glass call-operator-btn" 
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     onClick={() => window.open('https://wa.me/2349010335811', '_blank')}
                   >
-                    📞 CALL OFFICE
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    CALL OFFICE
                   </button>
                   {driverInfo && driverInfo.phone && (
                     <button 
                       className="btn-champagne call-operator-btn" 
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                       onClick={() => window.open(`https://wa.me/${driverInfo.phone.replace(/\D/g, '')}`, '_blank')}
                     >
-                      📞 CALL DRIVER
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                      CALL DRIVER
                     </button>
                   )}
                 </div>
@@ -449,7 +462,9 @@ export default function Tracking({ activeBooking }) {
       ) : (
         /* Empty State: Search for Reference */
         <div className="tracking-search-box glass-panel animate-slide-up">
-          <div className="search-icon">🔍</div>
+          <div className="search-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--color-champagne)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
           <h3>Verify Active Dispatch</h3>
           <p>Please enter your booking reference number to activate real-time telemetry tracking.</p>
 

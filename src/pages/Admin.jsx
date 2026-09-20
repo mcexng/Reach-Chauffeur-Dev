@@ -588,7 +588,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
     return (
       <div className="admin-page-wrapper section-container">
         <div className="auth-form-wrapper glass-panel animate-slide-up" style={{ maxWidth: '400px', margin: '100px auto' }}>
-          <div className="login-icon">🛡️</div>
+          <div className="login-icon" style={{ fontSize: '1.2rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-champagne)' }}>SECURE ACCESS</div>
           <h3>Command Center</h3>
           <p className="auth-subtitle">Restricted Access. Enter operator key.</p>
           <form onSubmit={handleAdminLogin} className="login-form">
@@ -614,7 +614,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                 required
               />
             </div>
-            {loginError && <p className="login-error-text" style={{ color: 'red', marginTop: '10px' }}>⚠️ {loginError}</p>}
+            {loginError && <p className="login-error-text" style={{ color: 'red', marginTop: '10px' }}>{loginError}</p>}
             <button type="submit" className="btn-champagne login-btn" style={{ marginTop: '20px' }}>
               Authenticate
             </button>
@@ -634,7 +634,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
             className="btn-glass btn-small"
             style={{ color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)', cursor: 'pointer' }}
           >
-            🔒 Log Out
+            Log Out
           </button>
         </div>
         <h2>Reach Operator Desk</h2>
@@ -650,68 +650,68 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
             onClick={() => setActiveTab('bookings')}
             className={`admin-tab-btn ${activeTab === 'bookings' ? 'active' : ''}`}
           >
-            🔔 Bookings Queue ({bookings.filter(b => b.status === 'Pending Payment').length} New)
+            Bookings Queue ({bookings.filter(b => b.status === 'Pending Payment').length} New)
           </button>
           <button 
             onClick={() => setActiveTab('fleet')}
             className={`admin-tab-btn ${activeTab === 'fleet' ? 'active' : ''}`}
           >
-            🚗 Fleet Matrix Manager
+            Fleet Matrix Manager
           </button>
           <button 
             onClick={() => setActiveTab('fleet-updates')}
             className={`admin-tab-btn ${activeTab === 'fleet-updates' ? 'active' : ''}`}
           >
-            🚚 Fleet Updates & Deliveries ({fleetUpdates.length})
+            Fleet Updates & Deliveries ({fleetUpdates.length})
           </button>
           <button 
             onClick={() => setActiveTab('news')}
             className={`admin-tab-btn ${activeTab === 'news' ? 'active' : ''}`}
           >
-            📰 News Hub Curation
+            News Hub Curation
           </button>
           <button 
             onClick={() => setActiveTab('drivers')}
             className={`admin-tab-btn ${activeTab === 'drivers' ? 'active' : ''}`}
           >
-            🧑‍✈️ Chauffeur Roster
+            Chauffeur Roster
           </button>
           <button 
             onClick={() => setActiveTab('history')}
             className={`admin-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
           >
-            📊 Ride History & Analytics
+            Ride History & Analytics
           </button>
           <button 
             onClick={() => setActiveTab('corporate')}
             className={`admin-tab-btn ${activeTab === 'corporate' ? 'active' : ''}`}
           >
-            🏢 Corporate Accounts
+            Corporate Accounts
           </button>
           <button 
             onClick={() => setActiveTab('database')}
             className={`admin-tab-btn ${activeTab === 'database' ? 'active' : ''}`}
             style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}
           >
-            💾 Database Sync
+            Database Sync
           </button>
           <button 
             onClick={() => setActiveTab('security')}
             className={`admin-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
           >
-            🔐 Security Settings
+            Security Settings
           </button>
           <button 
             onClick={() => setActiveTab('payment')}
             className={`admin-tab-btn ${activeTab === 'payment' ? 'active' : ''}`}
           >
-            💳 Payment Settings
+            Payment Settings
           </button>
           <button 
             onClick={() => setActiveTab('pricing')}
             className={`admin-tab-btn ${activeTab === 'pricing' ? 'active' : ''}`}
           >
-            🏷️ Pricing & Promos
+            Pricing & Promos
           </button>
         </div>
 
@@ -868,7 +868,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                                     >
                                       <option value="">-- Choose a Driver --</option>
                                       {drivers.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name} ({d.tier} - ⭐{d.rating})</option>
+                                        <option key={d.id} value={d.id}>{d.name} ({d.tier} - Rating {d.rating})</option>
                                       ))}
                                     </select>
                                   </div>
@@ -1059,7 +1059,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                         {/* 5. Completed */}
                         {booking.status === 'Completed' && (
                           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <span className="completion-checked">✓ Ride Complete</span>
+                            <span className="completion-checked">Ride Complete</span>
                             
                             {booking.extension?.status === 'Pending Admin Approval' && (
                               <div style={{ padding: '10px', background: 'rgba(212,175,55,0.1)', border: '1px solid var(--color-champagne)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1280,7 +1280,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                 {/* AMENITIES SECTION */}
                 <div className="form-row">
                   <div className="input-group">
-                    <label>✨ Vehicle Amenities & Refreshments (Displayed to Users)</label>
+                    <label>Vehicle Amenities & Refreshments (Displayed to Users)</label>
                     <input 
                       type="text" 
                       placeholder="e.g. Dom Pérignon Chilled + Gold Standard Water, Executive Espresso"
@@ -1291,7 +1291,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     />
                   </div>
                   <div className="input-group">
-                    <label>📡 Wi-Fi & Connectivity Specs</label>
+                    <label>Wi-Fi & Connectivity Specs</label>
                     <input 
                       type="text" 
                       placeholder="e.g. 5G Dedicated Hotspot"
@@ -1377,7 +1377,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                               style={{ flex: 1 }}
                               onClick={() => handleEditVehicleClick(car)}
                             >
-                              ✏️ Edit
+                              Edit
                             </button>
                             <button 
                               className={`btn-small ${car.isActive ? 'btn-glass' : 'btn-champagne'}`}
@@ -1507,14 +1507,14 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                               window.scrollTo({ top: 300, behavior: 'smooth' });
                             }}
                           >
-                            ✏️ Edit
+                            Edit
                           </button>
                           <button 
                             className="btn-glass btn-small delete-btn"
                             style={{ flex: 1 }}
                             onClick={() => handleDeleteFleetUpdate(item.id)}
                           >
-                            🗑️ Delete
+                            Delete
                           </button>
                         </div>
                       </div>
@@ -1638,13 +1638,13 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                             window.scrollTo({ top: 300, behavior: 'smooth' });
                           }}
                         >
-                          ✏️ Edit
+                          Edit
                         </button>
                         <button 
                           className="btn-glass btn-small delete-btn"
                           onClick={() => handleDeleteArticle(art.id)}
                         >
-                          🗑️ Delete
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -1752,7 +1752,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                     <div key={drv.id} className="article-admin-card glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <h5>{drv.name} <span style={{fontSize: '0.8rem', color: '#888'}}>({drv.status})</span></h5>
-                        <span>{drv.tier} • ⭐ {drv.rating} • {drv.phone}</span>
+                        <span>{drv.tier} • Rating {drv.rating} • {drv.phone}</span>
                       </div>
                       <button 
                         className="btn-glass btn-small delete-btn"
@@ -1844,7 +1844,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {!selectedCorpEmail ? (
                     <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', color: 'var(--color-silver)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
-                      <span style={{ fontSize: '3rem', marginBottom: '15px' }}>🏢</span>
+                      <span className="gold-badge" style={{ marginBottom: '15px' }}>CORPORATE DESK</span>
                       <p>Select a corporate account from the ledger to view details, configure discounts, and audit ride history.</p>
                     </div>
                   ) : (() => {

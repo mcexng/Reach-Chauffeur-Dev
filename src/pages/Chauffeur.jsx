@@ -78,7 +78,9 @@ export default function Chauffeur() {
     return (
       <div className="chauffeur-portal section-container">
         <div className="auth-form-wrapper glass-panel animate-slide-up" style={{ maxWidth: '400px', margin: '100px auto' }}>
-          <div className="login-icon">🧑‍✈️</div>
+          <div className="login-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+          </div>
           <h3>Chauffeur Access</h3>
           <p className="auth-subtitle">Log in to transmit telemetry and view manifests.</p>
           <form onSubmit={handleLogin} className="login-form">
@@ -93,7 +95,7 @@ export default function Chauffeur() {
                 required
               />
             </div>
-            {error && <p className="login-error-text" style={{ color: 'red' }}>⚠️ {error}</p>}
+            {error && <p className="login-error-text" style={{ color: '#ef4444' }}>{error}</p>}
             <button type="submit" className="btn-champagne login-btn">
               Authenticate
             </button>

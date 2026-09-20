@@ -164,62 +164,100 @@ export const db = {
         data.push({ id: docSnap.id, ...docSnap.data() });
       });
       if (data.length === 0) {
+        const cached = localStorage.getItem('reach_fleet_updates');
+        if (cached) {
+          try {
+            return JSON.parse(cached);
+          } catch(e) {}
+        }
         return DEFAULT_FLEET_UPDATES;
       }
-      return data.map(u => ({
+      const mapped = data.map(u => ({
         ...u,
         tierLabel: u.tierLabel || u.tierlabel || 'Presidential Limousine',
         name: u.name || u.title || ''
       })).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      try {
+        localStorage.setItem('reach_fleet_updates', JSON.stringify(mapped));
+      } catch(e) {}
+      return mapped;
     } catch (e) {
-      console.error('Error fetching fleet updates:', e);
+      console.warn('Falling back to local storage for fleet updates:', e);
+      const cached = localStorage.getItem('reach_fleet_updates');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch(err) {}
+      }
       return DEFAULT_FLEET_UPDATES;
     }
   },
 
   addFleetUpdate: async (updateData) => {
+    const id = updateData.id || 'del-' + Date.now();
+    const flat = {
+      id,
+      name: updateData.name || updateData.title || '',
+      tierlabel: updateData.tierLabel || 'Presidential Limousine',
+      tag: updateData.tag || 'JUST ADDED',
+      desc: updateData.desc || updateData.description || '',
+      image: updateData.image || '',
+      date: updateData.date || new Date().toISOString().split('T')[0]
+    };
+
+    // 1. Immediately update localStorage cache so UI can read it instantaneously
     try {
-      const id = updateData.id || 'del-' + Date.now();
-      const flat = {
-        id,
-        name: updateData.name || updateData.title || '',
-        tierlabel: updateData.tierLabel || 'Presidential Limousine',
-        tag: updateData.tag || 'JUST ADDED',
-        desc: updateData.desc || updateData.description || '',
-        image: updateData.image || '',
-        date: updateData.date || new Date().toISOString().split('T')[0]
-      };
+      const cached = await db.getFleetUpdates();
+      const updatedList = [flat, ...cached.filter(item => item.id !== id)];
+      localStorage.setItem('reach_fleet_updates', JSON.stringify(updatedList));
+    } catch(e) {}
+
+    // 2. Persist to Firestore
+    try {
       await setDoc(doc(dbFS, 'fleet_updates', id), flat);
-      return flat;
     } catch (e) {
-      console.error('Error adding fleet update:', e);
-      throw e;
+      console.warn('Firestore setDoc warning (persisted locally):', e);
     }
+    return flat;
   },
 
   updateFleetUpdate: async (id, updateData) => {
+    const flat = {};
+    if (updateData.name !== undefined) flat.name = updateData.name;
+    if (updateData.tierLabel !== undefined) flat.tierlabel = updateData.tierLabel;
+    if (updateData.tag !== undefined) flat.tag = updateData.tag;
+    if (updateData.desc !== undefined) flat.desc = updateData.desc;
+    if (updateData.image !== undefined) flat.image = updateData.image;
+
+    // Update local cache
     try {
-      const flat = {};
-      if (updateData.name !== undefined) flat.name = updateData.name;
-      if (updateData.tierLabel !== undefined) flat.tierlabel = updateData.tierLabel;
-      if (updateData.tag !== undefined) flat.tag = updateData.tag;
-      if (updateData.desc !== undefined) flat.desc = updateData.desc;
-      if (updateData.image !== undefined) flat.image = updateData.image;
+      const cached = await db.getFleetUpdates();
+      const updatedList = cached.map(item => item.id === id ? { ...item, ...flat, tierLabel: flat.tierlabel || item.tierLabel } : item);
+      localStorage.setItem('reach_fleet_updates', JSON.stringify(updatedList));
+    } catch(e) {}
+
+    try {
       await updateDoc(doc(dbFS, 'fleet_updates', id), flat);
     } catch (e) {
-      console.error('Error updating fleet update:', e);
-      throw e;
+      console.warn('Firestore updateDoc warning (persisted locally):', e);
     }
   },
 
   deleteFleetUpdate: async (id) => {
+    // Delete from local cache
+    try {
+      const cached = await db.getFleetUpdates();
+      const updatedList = cached.filter(item => item.id !== id);
+      localStorage.setItem('reach_fleet_updates', JSON.stringify(updatedList));
+    } catch(e) {}
+
     try {
       await deleteDoc(doc(dbFS, 'fleet_updates', id));
     } catch (e) {
-      console.error('Error deleting fleet update:', e);
-      throw e;
+      console.warn('Firestore deleteDoc warning (deleted locally):', e);
     }
   },
+
 
   // -------------------------------------------------------------
   // ARTICLES

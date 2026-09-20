@@ -58,8 +58,11 @@ export default function Footer({ onOpenLegal }) {
             <p>Subscribe to receive exclusive access to new arrivals, bespoke tour releases, and corporate travel updates.</p>
             
             {subscribed ? (
-              <div className="subscribe-success animate-fade-in">
-                <span className="success-badge">✓</span> Subscription Confirmed
+              <div className="subscribe-success animate-fade-in" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <span className="success-badge" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+                Subscription Confirmed
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="newsletter-form">
