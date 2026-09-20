@@ -122,10 +122,118 @@ export default function Corporate({ onOpenBooking }) {
     onOpenBooking(maybach, { pickup: address });
   };
 
-  const mockInvoices = isLoggedIn && currentFirm ? [
-    { id: 'INV-2026-004', period: 'May 2026', total: `₦${Math.round(1420000 * (1 - (currentFirm.discountRate / 100))).toLocaleString()}`, status: 'Settled via Account Credit' },
-    { id: 'INV-2026-005', period: 'June 2026 (Current)', total: `₦${Math.round(890000 * (1 - (currentFirm.discountRate / 100))).toLocaleString()}`, status: 'Pending Auto-Debit (July 1)' }
-  ] : [];
+  // Compute dynamic monthly invoices and statements based on actual corporate bookings
+  const invoices = React.useMemo(() => {
+    if (!isLoggedIn || !currentFirm || !rides || rides.length === 0) return [];
+    
+    const groups = {};
+    rides.forEach(ride => {
+      const dateStr = ride.created_at || ride.dispatchTime || ride.logistics?.date || '';
+      const dateObj = dateStr ? new Date(dateStr) : new Date();
+      const monthYearKey = !isNaN(dateObj.getTime())
+        ? dateObj.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+        : 'Recent Transfers';
+      
+      if (!groups[monthYearKey]) {
+        groups[monthYearKey] = {
+          period: monthYearKey,
+          rides: [],
+          totalCost: 0,
+          hasPending: false
+        };
+      }
+      groups[monthYearKey].rides.push(ride);
+      groups[monthYearKey].totalCost += (ride.totalCost || 0);
+      if (ride.status !== 'Completed') {
+        groups[monthYearKey].hasPending = true;
+      }
+    });
+
+    return Object.entries(groups).map(([period, data], idx) => {
+      const invNum = String(idx + 1).padStart(3, '0');
+      const year = period.split(' ')[1] || new Date().getFullYear();
+      return {
+        id: `INV-${year}-${invNum}`,
+        period: period,
+        ridesCount: data.rides.length,
+        total: `₦${data.totalCost.toLocaleString()}`,
+        status: data.hasPending ? 'Pending Settlement' : 'Settled via Account Billing',
+        rides: data.rides
+      };
+    });
+  }, [isLoggedIn, currentFirm, rides]);
+
+  const handleDownloadStatement = (inv) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return alert(`Generating Statement ledger: ${inv.id}`);
+    
+    const rideRows = (inv.rides || []).map(r => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${r.bookingRef}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${r.vehicle || 'Chauffeur Vehicle'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${r.logistics?.pickup || 'Pickup'} &rarr; ${r.logistics?.stops?.[0] || 'Dropoff'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd;">${r.status || 'Completed'}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">₦${(r.totalCost || 0).toLocaleString()}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${inv.id} - ${currentFirm?.companyName} Statement</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #222; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #b38e44; padding-bottom: 20px; }
+            .logo { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 30px; font-size: 14px; }
+            th { text-align: left; background: #f8f8f8; padding: 12px 10px; border-bottom: 2px solid #ddd; }
+            .total-box { margin-top: 30px; text-align: right; font-size: 18px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="logo">REACH CHAUFFEUR</div>
+              <p>Corporate Travel Division &bull; Executive Mobility</p>
+            </div>
+            <div style="text-align: right;">
+              <h2>BILLING STATEMENT</h2>
+              <p><strong>Statement ID:</strong> ${inv.id}</p>
+              <p><strong>Period:</strong> ${inv.period}</p>
+            </div>
+          </div>
+          <div style="margin-top: 25px;">
+            <p><strong>Billed To:</strong> ${currentFirm?.companyName || 'Corporate Partner'}</p>
+            <p><strong>Corporate ID:</strong> ${currentFirm?.corporateId || 'N/A'}</p>
+            <p><strong>Account Email:</strong> ${currentFirm?.email || ''}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Vehicle</th>
+                <th>Route</th>
+                <th>Status</th>
+                <th style="text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rideRows}
+            </tbody>
+          </table>
+          <div class="total-box">
+            <p><strong>Total Billed:</strong> ${inv.total}</p>
+            <p style="font-size: 13px; color: #666;">Status: ${inv.status}</p>
+          </div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   return (
     <div className="corporate-page-wrapper section-container">
@@ -289,23 +397,33 @@ export default function Corporate({ onOpenBooking }) {
                   <h3>Monthly Invoices & Accruals</h3>
                   <p className="pane-desc">Download detailed billing statement sheets and verify historical account ledger balances.</p>
                   
-                  <div className="invoices-list">
-                    {mockInvoices.map((inv) => (
-                      <div key={inv.id} className="invoice-item-card glass-panel">
-                        <div className="inv-meta">
-                          <span className="inv-id">{inv.id}</span>
-                          <h4>{inv.period}</h4>
-                          <span className="inv-status">{inv.status}</span>
+                  {invoices.length === 0 ? (
+                    <div className="glass-panel" style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-silver)' }}>
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 12px auto', opacity: 0.6 }}>
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                      </svg>
+                      <h4 style={{ color: 'var(--color-champagne)', margin: '0 0 8px 0', fontSize: '1rem' }}>No Billing Statements Yet</h4>
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>Monthly statements and tax invoices will automatically appear here once rides are booked under this corporate account.</p>
+                    </div>
+                  ) : (
+                    <div className="invoices-list">
+                      {invoices.map((inv) => (
+                        <div key={inv.id} className="invoice-item-card glass-panel">
+                          <div className="inv-meta">
+                            <span className="inv-id">{inv.id}</span>
+                            <h4>{inv.period} ({inv.ridesCount} {inv.ridesCount === 1 ? 'Transfer' : 'Transfers'})</h4>
+                            <span className="inv-status">{inv.status}</span>
+                          </div>
+                          <div className="inv-actions">
+                            <span className="inv-total">{inv.total}</span>
+                            <button className="btn-glass download-btn" onClick={() => handleDownloadStatement(inv)}>
+                              Download PDF Statement
+                            </button>
+                          </div>
                         </div>
-                        <div className="inv-actions">
-                          <span className="inv-total">{inv.total}</span>
-                          <button className="btn-glass download-btn" onClick={() => alert(`Downloading Statement ledger: ${inv.id}`)}>
-                            Download PDF Statement
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
