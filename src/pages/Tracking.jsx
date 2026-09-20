@@ -159,7 +159,9 @@ export default function Tracking({ activeBooking }) {
     setBooking({ ...booking, status: 'Payment Processing' });
     
     try {
-      await triggerPaymentReceivedAlert(booking.bookingRef, booking.personal?.name || 'Unknown');
+      const passengerEmail = booking.personal?.email || booking.email || booking.userEmail || '';
+      const passengerName = booking.personal?.name || 'Valued Client';
+      await triggerPaymentReceivedAlert(booking.bookingRef, passengerName, passengerEmail);
     } catch (e) {
       console.error('Failed to send payment alert:', e);
     }

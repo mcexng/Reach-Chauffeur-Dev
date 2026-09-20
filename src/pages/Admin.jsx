@@ -201,16 +201,28 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
     setPricingSettings(await db.getPricingSettings());
   };
 
-  const handleStatusChange = async (ref, status, extraData = {}) => {
+  const handleStatusChange = async (ref, status, extraData = {}, directBooking = null) => {
     await db.updateBookingStatus(ref, status, extraData);
     
     // Find the booking for notification context
-    const booking = bookings.find(b => b.bookingRef === ref);
+    const booking = directBooking || bookings.find(b => 
+      (b.bookingRef || b.bookingref || b.id || '').toLowerCase() === (ref || '').toLowerCase()
+    );
+    
     if (booking) {
+      const passengerEmail = booking.personal?.email || booking.email || booking.userEmail || booking.clientEmail || '';
       if (status === 'Awaiting Payment') {
-        await triggerAdminApprovalAlert(booking.personal?.email, ref);
+        try {
+          await triggerAdminApprovalAlert(passengerEmail, ref, booking);
+        } catch (err) {
+          console.error('Failed to trigger approval alert:', err);
+        }
       } else if (status === 'Completed') {
-        await triggerRideEndedAlert(ref, booking.personal?.email);
+        try {
+          await triggerRideEndedAlert(ref, passengerEmail);
+        } catch (err) {
+          console.error('Failed to trigger ride ended alert:', err);
+        }
       }
     }
     
@@ -224,8 +236,9 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
     setEditCorpContact(corp.contactName);
     setEditCorpPhone(corp.phone || '');
     setEditCorpId(corp.corporateId || '');
-    setEditCorpDiscount(corp.discountRate || 0);
-    setEditCorpDiscountEnabled((corp.discountRate || 0) > 0);
+    const currentRate = Number(corp.discountRate || 0);
+    setEditCorpDiscount(currentRate > 0 ? currentRate : 10);
+    setEditCorpDiscountEnabled(currentRate > 0);
   };
 
   const handleSaveCorp = async (e) => {
@@ -242,7 +255,7 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
       discountRate: finalDiscount
     });
     
-    alert('Corporate account updated successfully!');
+    alert(`Corporate partner updated. Discount set to: ${finalDiscount > 0 ? `${finalDiscount}% Active` : 'Inactive (0%)'}`);
     refreshData();
   };
 
@@ -784,7 +797,15 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                         {booking.status === 'Pending Admin Approval' && (
                           <button 
                             className="btn-champagne btn-small"
-                            onClick={() => handleStatusChange(booking.bookingRef, 'Awaiting Payment')}
+                            onClick={async () => {
+                              try {
+                                await handleStatusChange(booking.bookingRef, 'Awaiting Payment', {}, booking);
+                                const email = booking.personal?.email || booking.email || '';
+                                alert(`Booking ${booking.bookingRef} approved! Notification email sent to ${email || 'passenger'} and admin.`);
+                              } catch(e) {
+                                console.error('Error approving booking:', e);
+                              }
+                            }}
                           >
                             Approve Booking Request
                           </button>
@@ -912,20 +933,25 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                                           }
                                         }
 
+                                        const vehicle = vehicles.find(v => v.id === selectedVehicleId);
+                                        const passengerEmail = booking.personal?.email || booking.email || booking.userEmail || '';
+                                        const vehicleName = booking.vehicle || vehicle?.name || 'Executive Chauffeur Vehicle';
+                                        const licensePlate = vehicle?.licensePlate || vehicle?.specs?.licensePlate || '';
+
                                         if (assignedDriver) {
                                           try {
                                             await triggerChauffeurDispatchedAlert(
-                                              booking.personal?.email, 
+                                              passengerEmail, 
                                               booking.bookingRef, 
                                               assignedDriver.name, 
-                                              booking.vehicle
+                                              assignedDriver.phone,
+                                              vehicleName,
+                                              licensePlate
                                             );
                                           } catch(e) {
                                             console.warn('Dispatch notification warning:', e);
                                           }
                                         }
-                                        
-                                        const vehicle = vehicles.find(v => v.id === selectedVehicleId);
                                         
                                         // Recalculate endTime starting from actual dispatch moment
                                         let hours = 24;
@@ -941,9 +967,9 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                                         await handleStatusChange(booking.bookingRef, 'Chauffeur Dispatched', { 
                                           driver_id: selectedDriverId,
                                           assigned_vehicle_id: selectedVehicleId,
-                                          assigned_license_plate: vehicle?.licensePlate || vehicle?.specs?.licensePlate || '',
+                                          assigned_license_plate: licensePlate,
                                           endTime: actualEndTime
-                                        });
+                                        }, booking);
 
                                         alert('Chauffeur officially dispatched! Live tracking is now active.');
                                         setDispatchingRef(null);
@@ -1855,7 +1881,9 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                             </div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--color-silver)', marginTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
                               <span>{acc.email}</span>
-                              <strong style={{ color: 'var(--color-champagne)' }}>{acc.discountRate}% Off</strong>
+                              <strong style={{ color: Number(acc.discountRate) > 0 ? 'var(--color-champagne)' : 'var(--color-silver)' }}>
+                                {Number(acc.discountRate) > 0 ? `${acc.discountRate}% Off` : '0% (Inactive)'}
+                              </strong>
                             </div>
                           </div>
                         );

@@ -98,7 +98,8 @@ export default function Corporate({ onOpenBooking }) {
       contactName: signUpData.contactName,
       phone: signUpData.phone,
       password: signUpData.password,
-      discountRate: 15,
+      discountRate: 0,
+      discountEnabled: false,
       status: 'Active',
       corporateId: corpId
     };
@@ -255,7 +256,7 @@ export default function Corporate({ onOpenBooking }) {
               </span>
               <div>
                 <h3>{currentFirm.companyName}</h3>
-                <p>Enterprise Tier Partner • <strong>{currentFirm.discountRate}% Active Account Discount</strong></p>
+                <p>Enterprise Tier Partner • <strong>{Number(currentFirm.discountRate) > 0 ? `${currentFirm.discountRate}% Active Account Discount` : 'Standard Account (0% Discount)'}</strong></p>
               </div>
             </div>
             <div className="corp-stats">
@@ -270,7 +271,7 @@ export default function Corporate({ onOpenBooking }) {
             </div>
           </div>
 
-          {currentFirm.discountRate > 0 && (
+          {Number(currentFirm.discountRate) > 0 && (
             <div className="discount-alert-banner" style={{ background: 'linear-gradient(90deg, rgba(212,175,55,0.15) 0%, rgba(0,0,0,0) 100%)', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '12px', padding: '15px 20px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
               <span className="gold-badge">PREFERRED</span>
               <div style={{ textAlign: 'left' }}>
