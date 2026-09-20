@@ -6,6 +6,7 @@ import { triggerAdminApprovalAlert, triggerChauffeurDispatchedAlert, triggerRide
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import ThemeToggle from '../components/ThemeToggle';
 
 // Fix Leaflet's default icon path issues in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -587,7 +588,10 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
   if (!isAuthenticated) {
     return (
       <div className="admin-page-wrapper section-container">
-        <div className="auth-form-wrapper glass-panel animate-slide-up" style={{ maxWidth: '400px', margin: '100px auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', maxWidth: '400px', margin: '40px auto 0' }}>
+          <ThemeToggle />
+        </div>
+        <div className="auth-form-wrapper glass-panel animate-slide-up" style={{ maxWidth: '400px', margin: '20px auto 100px' }}>
           <div className="login-icon" style={{ fontSize: '1.2rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-champagne)' }}>SECURE ACCESS</div>
           <h3>Command Center</h3>
           <p className="auth-subtitle">Restricted Access. Enter operator key.</p>
@@ -629,13 +633,16 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
       <div className="section-header animate-slide-up">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <span className="gold-badge">Administration Center</span>
-          <button 
-            onClick={handleLogout} 
-            className="btn-glass btn-small"
-            style={{ color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)', cursor: 'pointer' }}
-          >
-            Log Out
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <ThemeToggle />
+            <button 
+              onClick={handleLogout} 
+              className="btn-glass btn-small"
+              style={{ color: '#f87171', borderColor: 'rgba(248, 113, 113, 0.3)', cursor: 'pointer' }}
+            >
+              Log Out
+            </button>
+          </div>
         </div>
         <h2>Reach Operator Desk</h2>
         <p className="section-subtitle">
@@ -1667,8 +1674,8 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                 <div style={{ height: '350px', width: '100%', backgroundColor: '#1a1a1d', position: 'relative' }}>
                   <MapContainer center={[6.5244, 3.3792]} zoom={11} style={{ height: '100%', width: '100%', zIndex: 1 }}>
                     <TileLayer
-                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                      attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
                     {drivers.filter(d => d.current_lat && d.current_lng).map((driver) => (
                       <Marker key={driver.id} position={[driver.current_lat, driver.current_lng]} icon={driverIcon}>

@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
-:root {
+:root, [data-theme="light"] {
   /* Color System (Light Luxury) */
   --color-bg-base: #FAFAFA;
   --color-bg-elevated: #FFFFFF;
@@ -11,23 +11,54 @@
   --color-primary-light: #334155;
   --color-primary-dark: #020617;
   --color-primary-glow: rgba(30, 41, 59, 0.15);
-  --color-accent: #D4AF37;
+  --color-accent: #CBA557;
 
-  /* Legacy Restored Colors (Mapped for Light Theme Contrast) */
-  --color-champagne: #D4AF37;
+  /* Legacy Restored Colors */
+  --color-champagne: #CBA557;
   --color-champagne-light: #E5C158;
-  --color-silver: var(--color-text-muted);
+  --color-champagne-dark: #A88234;
+  --color-silver: #64748B;
   --color-silver-dark: #94A3B8;
-  --color-platinum: var(--color-primary-dark);
+  --color-platinum: #0F172A;
   --color-obsidian: #08080A;
+  --color-red-dim: #EF4444;
 
   /* Glassmorphism Settings */
   --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.9);
-  --glass-border-hover: rgba(30, 41, 59, 0.15);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-border-hover: rgba(203, 165, 87, 0.4);
   --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
   --backdrop-blur: blur(24px);
   --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  /* Color System (Dark Ultra-Luxury) */
+  --color-bg-base: #08080A;
+  --color-bg-elevated: #121217;
+  --color-bg-card: rgba(18, 18, 23, 0.75);
+  --color-text-main: #F3F4F6;
+  --color-text-muted: #9CA3AF;
+  --color-primary: #F8FAFC;
+  --color-primary-light: #E2E8F0;
+  --color-primary-dark: #FFFFFF;
+  --color-primary-glow: rgba(212, 175, 55, 0.25);
+  --color-accent: #D4AF37;
+
+  --color-champagne: #D4AF37;
+  --color-champagne-light: #F3E5AB;
+  --color-champagne-dark: #AA7C11;
+  --color-silver: #9CA3AF;
+  --color-silver-dark: #64748B;
+  --color-platinum: #F3F4F6;
+  --color-obsidian: #08080A;
+  --color-red-dim: #EF4444;
+
+  --glass-bg: rgba(18, 18, 23, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(212, 175, 55, 0.35);
+  --glass-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.7);
+  --backdrop-blur: blur(24px);
 }
 
 /* Base Styles */
@@ -119,13 +150,14 @@ a {
 
 /* Global Form & Dropdown Fixes */
 select, option, textarea, input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="date"], input[type="time"] {
-  background-color: #FFFFFF !important;
+  background-color: var(--color-bg-elevated) !important;
   color: var(--color-text-main) !important;
   font-family: 'Inter', sans-serif;
+  border: 1px solid var(--glass-border);
 }
 
 select {
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--glass-border);
   padding: 10px 14px;
   border-radius: 8px;
   outline: none;
@@ -133,13 +165,43 @@ select {
 }
 
 select:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-champagne);
   box-shadow: 0 0 0 3px var(--color-primary-glow);
+}
+
+.btn-champagne {
+  background: linear-gradient(135deg, var(--color-champagne) 0%, var(--color-champagne-dark) 100%);
+  color: #08080A;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 28px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
+  text-transform: uppercase;
+}
+
+.btn-champagne:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.45);
+  background: linear-gradient(135deg, var(--color-champagne-light) 0%, var(--color-champagne) 100%);
+}
+
+.btn-champagne:active {
+  transform: translateY(0);
 }
 
 .btn-primary {
   background: var(--color-primary);
-  color: #FFFFFF;
+  color: var(--color-bg-base);
   border: none;
   border-radius: 12px;
   padding: 16px 32px;
@@ -169,7 +231,7 @@ select:focus {
 .btn-glass {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
-  color: var(--color-platinum);
+  color: var(--color-text-main);
   border-radius: 8px;
   padding: 14px 28px;
   font-family: 'Outfit', sans-serif;
@@ -185,10 +247,32 @@ select:focus {
 }
 
 .btn-glass:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--color-champagne);
+  color: var(--color-champagne);
   transform: translateY(-2px);
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #FFF6D6 0%, var(--color-champagne) 50%, var(--color-champagne-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gold-badge {
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: var(--color-champagne);
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .gradient-text-primary {
@@ -218,6 +302,48 @@ select:focus {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  background: var(--color-bg-card);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-main);
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: var(--transition-smooth);
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--color-champagne);
+  color: var(--color-champagne);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+}
+
+.theme-toggle-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-icon {
+  display: block;
+}
+
+/* Leaflet map dark mode styling for clean, keyless OSM tiles */
+[data-theme='dark'] .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+[data-theme='dark'] .leaflet-container {
+  background: #11141c !important;
 }
 
 /* Common Layouts */

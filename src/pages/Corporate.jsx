@@ -110,22 +110,6 @@ export default function Corporate({ onOpenBooking }) {
     setSignUpData({ name: '', email: '', phone: '', password: '', contactName: '' });
   };
 
-  const handleDemoSignIn = () => {
-    setEmail('vip@sterlingholdings.com');
-    setPassword('admin');
-    const demoFirm = {
-      companyName: 'Corporate VIP Partner',
-      email: 'vip@sterlingholdings.com',
-      phone: '+2348000000000',
-      discountRate: 15,
-      corporateId: 'CORP-2026',
-      status: 'Active'
-    };
-    setCurrentFirm(demoFirm);
-    localStorage.setItem('current_corporate_partner', JSON.stringify(demoFirm));
-    setIsLoggedIn(true);
-    setError('');
-  };
 
   const handleQuickBook = (address) => {
     const maybach = vehicles.find(v => v.id === 'maybach-s' || v.name.toLowerCase().includes('maybach')) || {
@@ -412,10 +396,6 @@ export default function Corporate({ onOpenBooking }) {
                   Authenticate Account
                 </button>
               </form>
-
-              <button className="btn-glass demo-login-btn" onClick={handleDemoSignIn}>
-                Direct Demo Access (CORP-2026)
-              </button>
             </div>
           ) : (
             /* Sign Up Form */
@@ -579,12 +559,6 @@ export default function Corporate({ onOpenBooking }) {
           width: 100%;
         }
 
-        .demo-login-btn {
-          width: 100%;
-          font-size: 0.85rem;
-          padding: 10px;
-          border-color: rgba(255, 255, 255, 0.08);
-        }
 
         .login-error-text {
           font-size: 0.85rem;

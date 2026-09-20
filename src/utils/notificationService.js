@@ -7,12 +7,12 @@
  * IMPORTANT: To make this work, the Admin MUST configure the keys below.
  */
 
-const TELEGRAM_BOT_TOKEN = '8680333203:AAGedyRJCmHRF0bVZdfdmqlpd69-Vz8TrPI';
-const TELEGRAM_CHAT_ID = '8881557500';
+const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || '';
+const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || '8881557500';
 
-const EMAILJS_SERVICE_ID = 'service_irrebil';
-const EMAILJS_TEMPLATE_ID = 'template_3yquzdn';
-const EMAILJS_PUBLIC_KEY = 'xtYbcnlzSnVzNXGB';
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_irrebil';
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_3yquzdn';
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'xtYbcnlzSnVzNXGB';
 
 /**
  * Send an instant Telegram message to the Admin

@@ -187,10 +187,11 @@ export default function Home({ onQuickBook, vehicles = [] }) {
       
       <style>{`
         .home-layout {
-          background-color: #FAFAFA;
-          color: #1E293B;
+          background-color: var(--color-bg-base);
+          color: var(--color-text-main);
           min-height: 100vh;
           padding-bottom: 100px;
+          transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Hero Banner */
@@ -220,6 +221,10 @@ export default function Home({ onQuickBook, vehicles = [] }) {
           background: linear-gradient(to right, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
         }
 
+        [data-theme='dark'] .hero-banner::before {
+          background: linear-gradient(to right, rgba(8,8,10,0.96) 0%, rgba(8,8,10,0.6) 50%, transparent 100%);
+        }
+
         .hero-content {
           position: relative;
           z-index: 2;
@@ -230,7 +235,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         .hero-content h1 {
           font-family: 'Outfit', sans-serif;
           font-size: 3.5rem;
-          color: #1E293B;
+          color: var(--color-text-main);
           line-height: 1.1;
           font-weight: 700;
           margin-bottom: 20px;
@@ -238,14 +243,14 @@ export default function Home({ onQuickBook, vehicles = [] }) {
 
         .hero-content p {
           font-size: 1.1rem;
-          color: #475569;
+          color: var(--color-silver);
           margin-bottom: 30px;
           line-height: 1.6;
         }
 
         .btn-gold {
-          background-color: #CBA557;
-          color: #fff;
+          background-color: var(--color-champagne);
+          color: #08080a;
           border: none;
           padding: 14px 32px;
           border-radius: 50px;
@@ -256,8 +261,9 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         }
 
         .btn-gold:hover {
-          background-color: #B59045;
+          background-color: var(--color-champagne-light);
           transform: translateY(-2px);
+          box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
         }
 
         /* Booking Widget */
@@ -270,13 +276,13 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         }
 
         .horizontal-widget {
-          background: rgba(255, 255, 255, 0.6);
+          background: var(--color-bg-card);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.8);
+          border: 1px solid var(--glass-border);
           border-radius: 20px;
           padding: 24px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+          box-shadow: var(--glass-shadow);
         }
 
         .widget-fields {
@@ -295,32 +301,34 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         .field-group label {
           font-size: 0.75rem;
           font-weight: 700;
-          color: #1E293B;
+          color: var(--color-text-main);
           letter-spacing: 0.5px;
         }
 
         .input-wrapper {
           display: flex;
           align-items: center;
-          background: #fff;
+          background: var(--color-bg-elevated);
           border-radius: 8px;
           padding: 0 12px;
           height: 48px;
-          border: 1px solid #E2E8F0;
+          border: 1px solid var(--glass-border);
         }
 
         .input-wrapper .icon {
-          color: #94A3B8;
+          color: var(--color-champagne);
           margin-right: 8px;
+          display: flex;
+          align-items: center;
         }
 
         .input-wrapper input, .input-wrapper select {
-          border: none;
-          background: none;
+          border: none !important;
+          background: transparent !important;
           outline: none;
           width: 100%;
           font-family: 'Inter', sans-serif;
-          color: #334155;
+          color: var(--color-text-main) !important;
           font-size: 0.9rem;
         }
 
@@ -340,7 +348,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         .left-column h2, .right-column h2 {
           font-family: 'Outfit', sans-serif;
           font-size: 2rem;
-          color: #1E293B;
+          color: var(--color-text-main);
           margin-bottom: 30px;
         }
 
@@ -350,6 +358,19 @@ export default function Home({ onQuickBook, vehicles = [] }) {
           grid-template-columns: repeat(3, 1fr);
           gap: 20px;
           margin-bottom: 60px;
+        }
+
+        .fleet-card {
+          background: var(--color-bg-card);
+          border: 1px solid var(--glass-border);
+          border-radius: 16px;
+          padding: 16px;
+          transition: var(--transition-smooth);
+        }
+
+        .fleet-card:hover {
+          border-color: var(--glass-border-hover);
+          transform: translateY(-4px);
         }
 
         .fleet-card img {
@@ -363,12 +384,12 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         .fleet-card h3 {
           font-size: 1.1rem;
           margin-bottom: 8px;
-          color: #1E293B;
+          color: var(--color-text-main);
         }
 
         .fleet-card p {
           font-size: 0.85rem;
-          color: #64748B;
+          color: var(--color-silver);
           line-height: 1.5;
           margin-bottom: 16px;
         }
@@ -376,7 +397,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         .gold-line {
           width: 40px;
           height: 2px;
-          background-color: #CBA557;
+          background-color: var(--color-champagne);
         }
 
         /* About Image Segment */
@@ -407,29 +428,28 @@ export default function Home({ onQuickBook, vehicles = [] }) {
           height: 60px;
           border-radius: 50%;
           background-color: rgba(203, 165, 87, 0.1);
-          color: #CBA557;
+          color: var(--color-champagne);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.5rem;
           margin-bottom: 16px;
         }
 
         .feature-item h4 {
           font-size: 1.1rem;
           margin-bottom: 8px;
-          color: #1E293B;
+          color: var(--color-text-main);
         }
 
         .feature-item p {
           font-size: 0.85rem;
-          color: #64748B;
+          color: var(--color-silver);
           line-height: 1.5;
         }
 
         .about-text-section p {
           font-size: 0.95rem;
-          color: #475569;
+          color: var(--color-silver);
           line-height: 1.6;
           margin-bottom: 16px;
         }
@@ -437,7 +457,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
         .btn-link-gold {
           background: none;
           border: none;
-          color: #CBA557;
+          color: var(--color-champagne);
           font-weight: 600;
           cursor: pointer;
           font-size: 0.95rem;
@@ -474,6 +494,9 @@ export default function Home({ onQuickBook, vehicles = [] }) {
           }
           .hero-banner::before {
             background: rgba(255,255,255,0.85);
+          }
+          [data-theme='dark'] .hero-banner::before {
+            background: rgba(8,8,10,0.85);
           }
         }
       `}</style>

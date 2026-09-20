@@ -69,28 +69,9 @@ export default function Tracking({ activeBooking }) {
     db.getPaymentSettings().then(setPaymentSettings);
   }, []);
 
-  // Default demo data if no booking exists
-  const loadDemoBooking = () => {
-    const demo = {
-      bookingRef: 'RC-99824',
-      status: 'Chauffeur Dispatched',
-      vehicle: '2026 Mercedes-Maybach S-Class',
-      personal: { name: 'Julian Sterling' },
-      logistics: { pickup: 'Federal Palace Hotel, Victoria Island', date: '2026-06-19', time: '18:00', stops: [] },
-      totalCost: 320000
-    };
-    setBooking(demo);
-    localStorage.setItem('activeBookingRef', demo.bookingRef);
-    setEta(12);
-    setStatusText('En route to pickup location');
-  };
-
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (searchRef.trim().toUpperCase() === 'RC-99824') {
-      loadDemoBooking();
-      return;
-    }
+    if (!searchRef.trim()) return;
 
     // Search the live database
     const allBookings = await db.getBookings();
@@ -152,7 +133,7 @@ export default function Tracking({ activeBooking }) {
 
   // Real-time Firestore Subscription for Status Updates
   useEffect(() => {
-    if (!booking || !booking.bookingRef || booking.bookingRef === 'RC-99824') return;
+    if (!booking || !booking.bookingRef) return;
 
     const unsubscribe = onSnapshot(doc(dbFS, 'bookings', booking.bookingRef), (snapshot) => {
       if (snapshot.exists()) {
@@ -368,8 +349,8 @@ export default function Tracking({ activeBooking }) {
                 <div className="map-wrapper" style={{ height: '400px', width: '100%', position: 'relative' }}>
                   <MapContainer center={[driverLoc.lat, driverLoc.lng]} zoom={15} style={{ height: '100%', width: '100%' }}>
                     <TileLayer
-                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
                     <Marker position={[driverLoc.lat, driverLoc.lng]} icon={carIcon}>
                       <Popup>
@@ -481,10 +462,6 @@ export default function Tracking({ activeBooking }) {
               Track Ride
             </button>
           </form>
-
-          <button className="btn-glass demo-btn" onClick={loadDemoBooking}>
-            Preview Demo Ride (RC-99824)
-          </button>
         </div>
       )}
 
@@ -781,13 +758,6 @@ export default function Tracking({ activeBooking }) {
 
         .search-btn {
           width: 100%;
-        }
-
-        .demo-btn {
-          width: 100%;
-          font-size: 0.85rem;
-          padding: 10px;
-          border-color: rgba(255, 255, 255, 0.08);
         }
 
         .status-overlay-card {

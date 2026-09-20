@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar({ onOpenBooking }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -45,6 +46,7 @@ export default function Navbar({ onOpenBooking }) {
         </nav>
 
         <div className="nav-actions">
+          <ThemeToggle />
           <button className="btn-gold nav-cta" onClick={onOpenBooking}>
             BOOK NOW
           </button>
