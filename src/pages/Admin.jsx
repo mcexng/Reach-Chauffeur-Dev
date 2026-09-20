@@ -899,43 +899,60 @@ export default function Admin({ onFleetUpdate, onNewsUpdate, onBookingsUpdate })
                                   <button 
                                     className="btn-champagne btn-small"
                                     onClick={async () => {
-                                      if(!selectedDriverId) return alert('Select a driver to dispatch');
-                                      if(!selectedVehicleId) return alert('Select a vehicle to dispatch');
-                                      
-                                      const assignedDriver = drivers.find(d => d.id === selectedDriverId);
-                                      if (assignedDriver) {
-                                        await db.updateDriverStatus(selectedDriverId, 'On Route');
-                                        await triggerChauffeurDispatchedAlert(
-                                          booking.personal?.email, 
-                                          booking.bookingRef, 
-                                          assignedDriver.name, 
-                                          booking.vehicle
-                                        );
-                                      }
-                                      
-                                      alert('Chauffeur officially dispatched!');
-                                      const vehicle = vehicles.find(v => v.id === selectedVehicleId);
-                                      
-                                      // Recalculate endTime starting from actual dispatch moment
-                                      let hours = 24;
-                                      if (booking.bookingType === 'airport') hours = 6;
-                                      else if (booking.bookingType === '12hr') hours = 12;
-                                      else if (booking.bookingType === '24hr') hours = 24;
-                                      else if (booking.bookingType === 'multiday') {
-                                        const days = booking.logistics?.days || 2;
-                                        hours = days * 24;
-                                      }
-                                      const actualEndTime = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+                                      try {
+                                        if(!selectedDriverId) return alert('Please select a chauffeur to assign.');
+                                        if(!selectedVehicleId) return alert('Please select a vehicle to assign.');
+                                        
+                                        const assignedDriver = drivers.find(d => d.id === selectedDriverId);
+                                        if (assignedDriver && typeof db.updateDriverStatus === 'function') {
+                                          try {
+                                            await db.updateDriverStatus(selectedDriverId, 'On Route');
+                                          } catch(e) {
+                                            console.warn('Driver status update warning:', e);
+                                          }
+                                        }
 
-                                      handleStatusChange(booking.bookingRef, 'Chauffeur Dispatched', { 
-                                        driver_id: selectedDriverId,
-                                        assigned_vehicle_id: selectedVehicleId,
-                                        assigned_license_plate: vehicle.licensePlate,
-                                        endTime: actualEndTime
-                                      });
-                                      setDispatchingRef(null);
-                                      setSelectedDriverId('');
-                                      setSelectedVehicleId('');
+                                        if (assignedDriver) {
+                                          try {
+                                            await triggerChauffeurDispatchedAlert(
+                                              booking.personal?.email, 
+                                              booking.bookingRef, 
+                                              assignedDriver.name, 
+                                              booking.vehicle
+                                            );
+                                          } catch(e) {
+                                            console.warn('Dispatch notification warning:', e);
+                                          }
+                                        }
+                                        
+                                        const vehicle = vehicles.find(v => v.id === selectedVehicleId);
+                                        
+                                        // Recalculate endTime starting from actual dispatch moment
+                                        let hours = 24;
+                                        if (booking.bookingType === 'airport') hours = 6;
+                                        else if (booking.bookingType === '12hr') hours = 12;
+                                        else if (booking.bookingType === '24hr') hours = 24;
+                                        else if (booking.bookingType === 'multiday') {
+                                          const days = booking.logistics?.days || 2;
+                                          hours = days * 24;
+                                        }
+                                        const actualEndTime = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+
+                                        await handleStatusChange(booking.bookingRef, 'Chauffeur Dispatched', { 
+                                          driver_id: selectedDriverId,
+                                          assigned_vehicle_id: selectedVehicleId,
+                                          assigned_license_plate: vehicle?.licensePlate || vehicle?.specs?.licensePlate || '',
+                                          endTime: actualEndTime
+                                        });
+
+                                        alert('Chauffeur officially dispatched! Live tracking is now active.');
+                                        setDispatchingRef(null);
+                                        setSelectedDriverId('');
+                                        setSelectedVehicleId('');
+                                      } catch(err) {
+                                        console.error('Dispatch execution error:', err);
+                                        alert('Could not dispatch: ' + (err.message || 'Please check console'));
+                                      }
                                     }}
                                   >
                                     Dispatch Now

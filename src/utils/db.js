@@ -463,6 +463,14 @@ export const db = {
     }
   },
 
+  updateDriverStatus: async (id, status) => {
+    try {
+      await updateDoc(doc(dbFS, 'drivers', id), { status });
+    } catch (e) {
+      console.error('Error updating driver status in Firestore:', e);
+    }
+  },
+
   deleteDriver: async (id) => {
     try {
       await deleteDoc(doc(dbFS, 'drivers', id));
