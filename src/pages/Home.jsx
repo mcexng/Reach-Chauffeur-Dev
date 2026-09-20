@@ -20,10 +20,14 @@ export default function Home({ onQuickBook, vehicles = [] }) {
   };
 
   const defaultFleet = [
-    { name: 'Executive Sedan', desc: 'Sleek luxury for business professionals and standard airport transfers. Ensures quiet focus on the move.', img: 'https://images.unsplash.com/photo-1617531653332-bd46c24f2068?q=80&w=2115&auto=format&fit=crop' },
+    { name: 'Executive Sedan', desc: 'Sleek luxury for business professionals and standard airport transfers. Ensures quiet focus on the move.', img: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2115&auto=format&fit=crop' },
     { name: 'Luxury SUV', desc: 'Spacious grandeur built for small delegations and extended itineraries with absolute comfort.', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=2070&auto=format&fit=crop' },
     { name: 'First-Class Sprinter', desc: 'The ultimate mobile boardroom. Tailored for corporate roadshows and executive entourages.', img: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?q=80&w=2069&auto=format&fit=crop' }
   ];
+
+  // Prioritize vehicles with verified database garage photos for hero showcase
+  const primaryGarageCar = vehicles.find(v => (v.images?.[0] || v.image1 || '').includes('supabase.co')) || vehicles[0];
+  const heroBgImage = primaryGarageCar?.images?.[0] || primaryGarageCar?.image1 || defaultFleet[0].img;
 
   // Use the vehicles from DB if available, otherwise fall back to default
   const displayFleet = vehicles.length > 0 ? vehicles.slice(0, 3).map(v => ({
@@ -75,7 +79,7 @@ export default function Home({ onQuickBook, vehicles = [] }) {
     <div className="home-layout">
       {/* Hero Banner Area */}
       <section className="hero-banner-wrapper">
-        <div className="hero-banner" style={{ backgroundImage: `url(${displayFleet[0]?.img}), url(${defaultFleet[0].img})` }}>
+        <div className="hero-banner" style={{ backgroundImage: `url(${heroBgImage})` }}>
           <div className="hero-content">
             <h1>Elevate Your Journey.<br/>Redefining Luxury Travel.</h1>
             <p>Experience unparalleled comfort, professionalism, and discretion with our premium chauffeur service.</p>
